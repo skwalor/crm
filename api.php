@@ -5846,60 +5846,51 @@ switch ($action) {
         break;
     
     case 'saveTeamingPartner':
+      try {
         if (!has_permission('opportunity', 'update')) send_error('Permission denied.');
-        
+
         $data = json_decode(file_get_contents('php://input'), true);
+        if (!$data) {
+            send_error('Invalid JSON input', 400);
+        }
         $opp_id = intval($data['opportunity_id'] ?? 0);
         $id = intval($data['id'] ?? 0);
-        
+
         if ($opp_id <= 0) send_error('Invalid opportunity ID', 400);
-        
-        // Prepare variables for bind_param
-        $company_contact_id = !empty($data['company_contact_id']) ? intval($data['company_contact_id']) : null;
-        $partner_name = $data['partner_name'] ?? null;
-        $role = $data['role'] ?? null;
-        $capability = $data['capability'] ?? null;
-        $status = $data['status'] ?? 'identified';
+
+        // Table columns: id, opportunity_id, company_contact_id(int), partner_name(varchar255),
+        // role enum('prime','sub','mentor','protege','jv_partner'),
+        // capability(text), status enum('prospect','engaged','committed','signed'),
+        // nda_date(date), mou_date(date), teaming_agreement_date(date), notes(text)
+        $partner_name = $data['partner_name'] ?? '';
+        $role = $data['role'] ?? 'sub';
+        $capability = $data['capability'] ?? '';
+        $status = $data['status'] ?? 'prospect';
         $nda_date = !empty($data['nda_date']) ? $data['nda_date'] : null;
         $mou_date = !empty($data['mou_date']) ? $data['mou_date'] : null;
         $teaming_agreement_date = !empty($data['teaming_agreement_date']) ? $data['teaming_agreement_date'] : null;
         $notes = $data['notes'] ?? null;
-        
+
         if ($id > 0) {
-            $stmt = $conn->prepare("
-                UPDATE opportunity_teaming_partners SET
-                    company_contact_id = ?, partner_name = ?, role = ?,
-                    capability = ?, status = ?, nda_date = ?, mou_date = ?,
-                    teaming_agreement_date = ?, notes = ?
-                WHERE id = ? AND opportunity_id = ?
-            ");
-            $stmt->bind_param("issssssssii",
-                $company_contact_id, $partner_name, $role,
-                $capability, $status,
-                $nda_date, $mou_date,
-                $teaming_agreement_date, $notes,
-                $id, $opp_id
-            );
+            $stmt = $conn->prepare("UPDATE opportunity_teaming_partners SET partner_name=?, role=?, capability=?, status=?, nda_date=?, mou_date=?, teaming_agreement_date=?, notes=? WHERE id=? AND opportunity_id=?");
+            if (!$stmt) { send_error('Prepare failed: ' . $conn->error, 500); }
+            $stmt->bind_param("ssssssssii", $partner_name, $role, $capability, $status, $nda_date, $mou_date, $teaming_agreement_date, $notes, $id, $opp_id);
         } else {
-            $stmt = $conn->prepare("
-                INSERT INTO opportunity_teaming_partners (opportunity_id, company_contact_id, partner_name, role, capability, status, nda_date, mou_date, teaming_agreement_date, notes)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ");
-            $stmt->bind_param("iissssssss",
-                $opp_id, $company_contact_id, $partner_name, $role,
-                $capability, $status,
-                $nda_date, $mou_date,
-                $teaming_agreement_date, $notes
-            );
+            $stmt = $conn->prepare("INSERT INTO opportunity_teaming_partners (opportunity_id, partner_name, role, capability, status, nda_date, mou_date, teaming_agreement_date, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            if (!$stmt) { send_error('Prepare failed: ' . $conn->error, 500); }
+            $stmt->bind_param("issssssss", $opp_id, $partner_name, $role, $capability, $status, $nda_date, $mou_date, $teaming_agreement_date, $notes);
         }
-        
+
         if (!$stmt->execute()) {
-            send_error('Failed to save partner: ' . $stmt->error, 500);
+            send_error('Execute failed: ' . $stmt->error, 500);
         }
-        
+
         $new_id = $id > 0 ? $id : $conn->insert_id;
         send_response(['success' => true, 'id' => $new_id]);
-        break;
+      } catch (\Throwable $e) {
+        send_error('Exception: ' . $e->getMessage(), 500);
+      }
+      break;
     
     case 'deleteTeamingPartner':
         if (!has_permission('opportunity', 'update')) send_error('Permission denied.');

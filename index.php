@@ -7501,7 +7501,6 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                         <option value="jv_partner">JV Partner</option>
                         <option value="mentor">Mentor</option>
                         <option value="protege">Protégé</option>
-                        <option value="consultant">Consultant</option>
                     </select>
                 </div>
                 
@@ -7514,12 +7513,10 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 <div class="form-group" style="margin-bottom: 15px;">
                     <label>Status</label>
                     <select id="teamingPartnerStatus" style="width: 100%; box-sizing: border-box; padding: 12px 15px; border: 2px solid #e1e5e9; border-radius: 8px;">
-                        <option value="identified">Identified</option>
-                        <option value="contacted">Contacted</option>
-                        <option value="interested">Interested</option>
-                        <option value="nda_signed">NDA Signed</option>
-                        <option value="teaming_signed">Teaming Agreement Signed</option>
-                        <option value="declined">Declined</option>
+                        <option value="prospect">Prospect</option>
+                        <option value="engaged">Engaged</option>
+                        <option value="committed">Committed</option>
+                        <option value="signed">Signed</option>
                     </select>
                 </div>
                 
@@ -7580,24 +7577,24 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         document.getElementById('teamingPartnerDropdown').style.display = 'none';
     }
     
-    function submitTeamingPartner() {
+    async function submitTeamingPartner() {
         const companyId = document.getElementById('teamingPartnerSelectedId').value;
         const companyName = document.getElementById('teamingPartnerSelectedName').value || document.getElementById('teamingPartnerSearch').value;
         const role = document.getElementById('teamingPartnerRole').value;
         const capability = document.getElementById('teamingPartnerCapability').value;
         const status = document.getElementById('teamingPartnerStatus').value;
-        
+
         if (!companyName) {
             alert('Please select or enter a company name.');
             return;
         }
-        
+
         if (!capability) {
             alert('Please enter the partner\'s capability/contribution.');
             return;
         }
-        
-        saveTeamingPartner({
+
+        const success = await saveTeamingPartner({
             opportunity_id: currentWorkspaceOppId,
             company_id: companyId || null,
             partner_name: companyName,
@@ -7605,10 +7602,13 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             capability: capability,
             status: status
         });
-        
-        document.getElementById('teamingPartnerModal').style.display = 'none';
+
+        // Only close modal on success
+        if (success) {
+            document.getElementById('teamingPartnerModal').style.display = 'none';
+        }
     }
-    
+
     async function saveTeamingPartner(data) {
         try {
             const response = await fetch(`${API_URL}?action=saveTeamingPartner`, {
@@ -7616,14 +7616,35 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
             });
-            const result = await response.json();
-            
+
+            // Handle non-JSON responses (PHP fatal errors)
+            const text = await response.text();
+            let result;
+            try {
+                result = JSON.parse(text);
+            } catch (parseErr) {
+                console.error('Server returned non-JSON:', text);
+                alert('Server error saving partner. Check console for details.');
+                return false;
+            }
+
             if (result.success) {
+                // Ensure teaming_partners array exists
+                if (!workspaceData.teaming_partners) {
+                    workspaceData.teaming_partners = [];
+                }
                 workspaceData.teaming_partners.push({ ...data, id: result.id });
                 renderTeamingPartners();
+                return true;
+            } else {
+                alert('Error saving partner: ' + (result.error || 'Unknown error'));
+                console.error('saveTeamingPartner error:', result);
+                return false;
             }
         } catch (error) {
+            alert('Error saving partner: ' + error.message);
             console.error('Error saving partner:', error);
+            return false;
         }
     }
     
