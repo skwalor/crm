@@ -4841,7 +4841,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         };
 
         // Optimistic update: show task in workspace table immediately
-        if (currentWorkspaceOppId && taskData.relatedTo === 'Opportunity' && taskData.related_item_id == currentWorkspaceOppId) {
+        if (currentWorkspaceOppId && (taskData.relatedTo || '').toLowerCase() === 'opportunity' && taskData.related_item_id == currentWorkspaceOppId) {
             const tempTask = { ...taskData, assigned_to_name: taskData.assignedTo, id: effectiveId || 'temp_' + Date.now() };
             if (effectiveId) {
                 const idx = workspaceData.tasks.findIndex(t => t.id == effectiveId);
@@ -7751,7 +7751,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 <td>${dueDate}</td>
                 <td><span style="color:${pColor};font-weight:500;">${t.priority || '-'}</span></td>
                 <td><span style="background:${sColor};color:#fff;padding:2px 8px;border-radius:4px;font-size:0.8rem;">${t.status || '-'}</span></td>
-                <td><button class="opp-table-btn" onclick="editWorkspaceTask(${t.id})">Edit</button></td>
+                <td><button class="opp-table-btn" onclick="editWorkspaceTask(${t.id})">Edit</button> <button class="opp-table-btn" style="color:#dc3545;" onclick="deleteWorkspaceTask(${t.id}, '${t.title.replace(/'/g, "\\'")}')">Delete</button></td>
             </tr>`;
         }).join('');
     }
@@ -7783,9 +7783,27 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         taskModal.style.zIndex = '2100';
     }
 
+    async function deleteWorkspaceTask(taskId, taskTitle) {
+        if (!confirm(`Delete task "${taskTitle}"?`)) return;
+        try {
+            const response = await fetch(`${API_URL}?action=delete&type=task&id=${taskId}`, { method: 'GET' });
+            if (!response.ok) throw new Error('Delete failed');
+            // Remove from local data immediately
+            workspaceData.tasks = workspaceData.tasks.filter(t => t.id != taskId);
+            renderWorkspacePhaseTasks('qualification');
+            renderWorkspacePhaseTasks('capture');
+            renderWorkspacePhaseTasks('bid_decision');
+            await fetchAllData();
+        } catch (error) {
+            alert('Error deleting task: ' + error.message);
+        }
+    }
+
     function refreshWorkspaceTasks() {
         // Update workspaceData.tasks from the global tasks array (already refreshed by fetchAllData)
-        workspaceData.tasks = tasks.filter(t => t.relatedTo === 'Opportunity' && t.related_item_id == currentWorkspaceOppId);
+        const oppId = currentWorkspaceOppId;
+        const oppTasks = tasks.filter(t => (t.relatedTo || '').toLowerCase() === 'opportunity' && t.related_item_id == oppId);
+        workspaceData.tasks = oppTasks;
         renderWorkspacePhaseTasks('qualification');
         renderWorkspacePhaseTasks('capture');
         renderWorkspacePhaseTasks('bid_decision');
