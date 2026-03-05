@@ -617,18 +617,6 @@ switch ($action) {
         $divisionsResult = $conn->query("SELECT * FROM divisions ORDER BY agency_id, name ASC");
         $data['divisions'] = $divisionsResult ? $divisionsResult->fetch_all(MYSQLI_ASSOC) : [];
         
-        // Include sprints if user can view
-        if (has_permission('sprint', 'view')) {
-            $sprintsResult = $conn->query("SELECT * FROM sprints WHERE status = 'active' ORDER BY start_date ASC");
-            $data['sprints'] = $sprintsResult ? $sprintsResult->fetch_all(MYSQLI_ASSOC) : [];
-        }
-        
-        // Include format options
-        if (has_permission('format_option', 'view')) {
-            $formatResult = $conn->query("SELECT * FROM format_options WHERE is_active = 1 ORDER BY sort_order ASC");
-            $data['formatOptions'] = $formatResult ? $formatResult->fetch_all(MYSQLI_ASSOC) : [];
-        }
-        
         // Companies and Company Contacts (uses contact permission)
         if (has_permission('contact', 'view')) {
             // Get companies with parent company name
@@ -954,21 +942,7 @@ switch ($action) {
         $contact = $stmt->get_result()->fetch_assoc();
         
         if (!$contact) send_error('Contact not found', 404);
-        
-        // Get sprint history for this contact
-        $sprint_stmt = $conn->prepare("
-            SELECT css.*, s.name AS sprintName, u.username AS contactedByUsername, COALESCE(u.display_name, u.username) AS contactedByDisplayName
-            FROM contact_sprint_status css
-            JOIN sprints s ON css.sprint_id = s.id
-            LEFT JOIN users u ON css.contacted_by_user_id = u.id
-            WHERE css.contact_id = ?
-            ORDER BY s.start_date DESC
-            LIMIT 10
-        ");
-        $sprint_stmt->bind_param("i", $contact_id);
-        $sprint_stmt->execute();
-        $contact['sprintHistory'] = $sprint_stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-        
+
         send_response(['contact' => $contact]);
         break;
 
@@ -985,39 +959,12 @@ switch ($action) {
             send_error('Permission denied to view other users\' tasks.');
         }
         
-        // Get current sprint
-        $today = date('Y-m-d');
-        $current_sprint = $conn->query("
-            SELECT * FROM sprints 
-            WHERE start_date <= '$today' AND end_date >= '$today' AND status = 'active' 
-            LIMIT 1
-        ")->fetch_assoc();
-        
-        if (!$current_sprint) {
-            $current_sprint = $conn->query("
-                SELECT * FROM sprints 
-                WHERE start_date > '$today' AND status = 'active' 
-                ORDER BY start_date ASC LIMIT 1
-            ")->fetch_assoc();
-        }
-        if (!$current_sprint) {
-            $current_sprint = $conn->query("
-                SELECT * FROM sprints WHERE status = 'active' 
-                ORDER BY end_date DESC LIMIT 1
-            ")->fetch_assoc();
-        }
-        
-        $sprint_id = $current_sprint ? $current_sprint['id'] : 0;
-        
         $data = [
-            'currentSprint' => $current_sprint,
             'tasks' => [],
-            'contacts' => [],
             'opportunities' => [],
             'proposals' => [],
             'summary' => [
                 'tasks' => 0,
-                'contacts' => 0,
                 'opportunities' => 0,
                 'proposals' => 0
             ]
@@ -1038,49 +985,6 @@ switch ($action) {
         $stmt->execute();
         $data['tasks'] = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
         $data['summary']['tasks'] = count($data['tasks']);
-        
-        // Get contacts owned by user that haven't been met this sprint
-        if ($sprint_id > 0) {
-            $stmt = $conn->prepare("
-                SELECT 
-                    c.id, c.firstName, c.lastName, c.title, c.division,
-                    c.email, c.phone, c.agency_id, c.owner_user_id,
-                    a.name AS agencyName,
-                    css.id AS sprint_status_id,
-                    css.met_this_period,
-                    css.last_contact_date,
-                    css.contacted_by_user_id,
-                    css.notes AS sprintNotes
-                FROM contacts c
-                LEFT JOIN agencies a ON c.agency_id = a.id
-                LEFT JOIN contact_sprint_status css ON c.id = css.contact_id AND css.sprint_id = ?
-                WHERE c.owner_user_id = ?
-                AND (css.met_this_period = 0 OR css.met_this_period IS NULL)
-                AND c.status = 'Active'
-                ORDER BY a.name ASC, c.lastName ASC
-            ");
-            $stmt->bind_param("ii", $sprint_id, $view_user_id);
-            $stmt->execute();
-            $contacts = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-            
-            foreach ($contacts as &$contact) {
-                $contact['formats'] = [];
-                if ($contact['sprint_status_id']) {
-                    $fmt_stmt = $conn->prepare("
-                        SELECT fo.id, fo.name 
-                        FROM contact_sprint_formats csf 
-                        JOIN format_options fo ON csf.format_option_id = fo.id 
-                        WHERE csf.contact_sprint_id = ?
-                    ");
-                    $fmt_stmt->bind_param("i", $contact['sprint_status_id']);
-                    $fmt_stmt->execute();
-                    $contact['formats'] = $fmt_stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-                    $fmt_stmt->close();
-                }
-            }
-            $data['contacts'] = $contacts;
-            $data['summary']['contacts'] = count($contacts);
-        }
         
         // Get open opportunities owned by user
         $stmt = $conn->prepare("
@@ -1212,289 +1116,6 @@ switch ($action) {
         $stmt->execute();
         
         send_response(['success' => true]);
-        break;
-
-    // ==================== SPRINT ENDPOINTS ====================
-    
-    case 'getSprintData':
-        if (!has_permission('contact', 'view')) send_error('Permission denied to view contacts.');
-        
-        $sprint_id = intval($_GET['sprint_id'] ?? 0);
-        if ($sprint_id <= 0) send_error('Invalid sprint ID', 400);
-        
-        $sql = "
-            SELECT 
-                c.id, c.firstName, c.lastName, c.title, c.division,
-                c.agency_id, a.name AS agencyName,
-                c.email, c.phone, c.status, c.notes AS contactNotes,
-                c.owner_user_id, owner.username AS ownerUsername, COALESCE(owner.display_name, owner.username) AS ownerDisplayName,
-                css.id AS sprint_status_id, css.met_this_period,
-                css.last_contact_date, css.contacted_by_user_id,
-                contacted.username AS contacted_by_username, COALESCE(contacted.display_name, contacted.username) AS contacted_by_display_name, css.notes AS sprintNotes
-            FROM contacts c
-            LEFT JOIN agencies a ON c.agency_id = a.id
-            LEFT JOIN users owner ON c.owner_user_id = owner.id
-            LEFT JOIN contact_sprint_status css ON c.id = css.contact_id AND css.sprint_id = ?
-            LEFT JOIN users contacted ON css.contacted_by_user_id = contacted.id
-            WHERE c.status = 'Active'
-            ORDER BY a.name ASC, c.division ASC, c.lastName ASC
-        ";
-        
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param("i", $sprint_id);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $contacts = $result->fetch_all(MYSQLI_ASSOC);
-        
-        foreach ($contacts as &$contact) {
-            $contact['formats'] = [];
-            if ($contact['sprint_status_id']) {
-                $fmt_stmt = $conn->prepare("
-                    SELECT fo.id, fo.name 
-                    FROM contact_sprint_formats csf 
-                    JOIN format_options fo ON csf.format_option_id = fo.id 
-                    WHERE csf.contact_sprint_id = ?
-                ");
-                $fmt_stmt->bind_param("i", $contact['sprint_status_id']);
-                $fmt_stmt->execute();
-                $contact['formats'] = $fmt_stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-                $fmt_stmt->close();
-            }
-        }
-        
-        $total = count($contacts);
-        $met = count(array_filter($contacts, fn($c) => $c['met_this_period']));
-        
-        send_response([
-            'contacts' => $contacts,
-            'summary' => ['total' => $total, 'met' => $met, 'notMet' => $total - $met]
-        ]);
-        break;
-
-    case 'updateSprintStatus':
-        if (!has_permission('contact', 'update')) send_error('Permission denied to update contacts.');
-        
-        $data = json_decode(file_get_contents('php://input'), true);
-        $contact_id = intval($data['contact_id'] ?? 0);
-        $sprint_id = intval($data['sprint_id'] ?? 0);
-        // Convert boolean to integer (0 or 1) for MySQL
-        $met_this_period = (!empty($data['met_this_period']) && $data['met_this_period'] !== 'false' && $data['met_this_period'] !== '0') ? 1 : 0;
-        $last_contact_date = !empty($data['last_contact_date']) ? $data['last_contact_date'] : ($met_this_period ? date('Y-m-d') : null);
-        $contacted_by_user_id = !empty($data['contacted_by_user_id']) ? intval($data['contacted_by_user_id']) : $_SESSION['user_id'];
-        $notes = $data['notes'] ?? '';
-        $formats = $data['formats'] ?? [];
-        
-        if ($contact_id <= 0 || $sprint_id <= 0) send_error('Invalid contact or sprint ID', 400);
-        
-        // Use INSERT ... ON DUPLICATE KEY UPDATE to upsert the record
-        $stmt = $conn->prepare("
-            INSERT INTO contact_sprint_status (contact_id, sprint_id, met_this_period, last_contact_date, contacted_by_user_id, notes)
-            VALUES (?, ?, ?, ?, ?, ?)
-            ON DUPLICATE KEY UPDATE
-                met_this_period = VALUES(met_this_period),
-                last_contact_date = COALESCE(VALUES(last_contact_date), last_contact_date),
-                contacted_by_user_id = COALESCE(VALUES(contacted_by_user_id), contacted_by_user_id),
-                notes = CASE WHEN VALUES(notes) = '' THEN notes ELSE VALUES(notes) END,
-                updated_at = CURRENT_TIMESTAMP
-        ");
-        $stmt->bind_param("iiisis", $contact_id, $sprint_id, $met_this_period, $last_contact_date, $contacted_by_user_id, $notes);
-        
-        if (!$stmt->execute()) {
-            send_error('Database error: ' . $stmt->error, 500);
-        }
-        
-        $status_stmt = $conn->prepare("SELECT id FROM contact_sprint_status WHERE contact_id = ? AND sprint_id = ?");
-        $status_stmt->bind_param("ii", $contact_id, $sprint_id);
-        $status_stmt->execute();
-        $status_result = $status_stmt->get_result()->fetch_assoc();
-        $sprint_status_id = $status_result['id'];
-        
-        $conn->query("DELETE FROM contact_sprint_formats WHERE contact_sprint_id = $sprint_status_id");
-        
-        if (!empty($formats)) {
-            $fmt_stmt = $conn->prepare("INSERT INTO contact_sprint_formats (contact_sprint_id, format_option_id) VALUES (?, ?)");
-            foreach ($formats as $format_id) {
-                $format_id = intval($format_id);
-                if ($format_id > 0) {
-                    $fmt_stmt->bind_param("ii", $sprint_status_id, $format_id);
-                    $fmt_stmt->execute();
-                }
-            }
-            $fmt_stmt->close();
-        }
-        
-        send_response(['success' => true, 'sprint_status_id' => $sprint_status_id]);
-        break;
-
-    case 'saveSprint':
-        $data = json_decode(file_get_contents('php://input'), true);
-        $permission = empty($data['id']) ? 'create' : 'update';
-        if (!has_permission('sprint', $permission)) send_error('Permission denied to ' . $permission . ' sprints.');
-        
-        $id = !empty($data['id']) ? intval($data['id']) : null;
-        $name = trim($data['name'] ?? '');
-        $start_date = $data['start_date'] ?? '';
-        $end_date = $data['end_date'] ?? '';
-        $status = $data['status'] ?? 'active';
-        
-        if (empty($name) || empty($start_date) || empty($end_date)) {
-            send_error('Name, start date, and end date are required', 400);
-        }
-        
-        if ($id) {
-            $stmt = $conn->prepare("UPDATE sprints SET name = ?, start_date = ?, end_date = ?, status = ? WHERE id = ?");
-            $stmt->bind_param("ssssi", $name, $start_date, $end_date, $status, $id);
-        } else {
-            $created_by = $_SESSION['user_id'];
-            $stmt = $conn->prepare("INSERT INTO sprints (name, start_date, end_date, status, created_by) VALUES (?, ?, ?, ?, ?)");
-            $stmt->bind_param("ssssi", $name, $start_date, $end_date, $status, $created_by);
-        }
-        $stmt->execute();
-        
-        send_response(['success' => true, 'id' => $id ?: $conn->insert_id]);
-        break;
-
-    case 'deleteSprint':
-        if (!has_permission('sprint', 'delete')) send_error('Permission denied to delete sprints.');
-        
-        $id = intval($_GET['id'] ?? 0);
-        if ($id <= 0) send_error('Invalid sprint ID', 400);
-        
-        $stmt = $conn->prepare("DELETE FROM sprints WHERE id = ?");
-        $stmt->bind_param("i", $id);
-        $stmt->execute();
-        
-        send_response(['success' => $stmt->affected_rows > 0]);
-        break;
-
-    case 'getSprints':
-        if (!has_permission('sprint', 'view')) send_error('Permission denied to view sprints.');
-        
-        $include_archived = isset($_GET['include_archived']) && $_GET['include_archived'] === 'true';
-        
-        if ($include_archived) {
-            $sprints = $conn->query("SELECT s.*, u.username AS created_by_username FROM sprints s LEFT JOIN users u ON s.created_by = u.id ORDER BY start_date ASC")->fetch_all(MYSQLI_ASSOC);
-        } else {
-            $sprints = $conn->query("SELECT s.*, u.username AS created_by_username FROM sprints s LEFT JOIN users u ON s.created_by = u.id WHERE s.status = 'active' ORDER BY start_date ASC")->fetch_all(MYSQLI_ASSOC);
-        }
-        
-        send_response(['sprints' => $sprints]);
-        break;
-
-    case 'getCurrentSprint':
-        if (!has_permission('sprint', 'view')) send_error('Permission denied to view sprints.');
-        
-        $today = date('Y-m-d');
-        $stmt = $conn->prepare("SELECT * FROM sprints WHERE start_date <= ? AND end_date >= ? AND status = 'active' LIMIT 1");
-        $stmt->bind_param("ss", $today, $today);
-        $stmt->execute();
-        $sprint = $stmt->get_result()->fetch_assoc();
-        
-        if (!$sprint) {
-            $stmt = $conn->prepare("SELECT * FROM sprints WHERE start_date > ? AND status = 'active' ORDER BY start_date ASC LIMIT 1");
-            $stmt->bind_param("s", $today);
-            $stmt->execute();
-            $sprint = $stmt->get_result()->fetch_assoc();
-        }
-        
-        if (!$sprint) {
-            $sprint = $conn->query("SELECT * FROM sprints WHERE status = 'active' ORDER BY end_date DESC LIMIT 1")->fetch_assoc();
-        }
-        
-        send_response(['sprint' => $sprint]);
-        break;
-
-    case 'syncSprintForward':
-        if (!has_permission('contact', 'update')) send_error('Permission denied to update contacts.');
-        
-        $data = json_decode(file_get_contents('php://input'), true);
-        $source_sprint_id = intval($data['source_sprint_id'] ?? 0);
-        
-        if ($source_sprint_id <= 0) send_error('Invalid source sprint ID', 400);
-        
-        $source_sprint = $conn->query("SELECT end_date FROM sprints WHERE id = $source_sprint_id")->fetch_assoc();
-        if (!$source_sprint) send_error('Source sprint not found', 404);
-        
-        $future_sprints_result = $conn->query("SELECT id FROM sprints WHERE start_date > '{$source_sprint['end_date']}' AND status = 'active' ORDER BY start_date ASC");
-        $future_sprints = $future_sprints_result->fetch_all(MYSQLI_ASSOC);
-        
-        if (empty($future_sprints)) {
-            send_response(['success' => true, 'message' => 'No future sprints to sync to.', 'synced_count' => 0]);
-        }
-        
-        $source_statuses = $conn->query("SELECT contact_id, contacted_by_user_id, notes FROM contact_sprint_status WHERE sprint_id = $source_sprint_id")->fetch_all(MYSQLI_ASSOC);
-        
-        $synced_count = 0;
-        foreach ($future_sprints as $future_sprint) {
-            $future_id = $future_sprint['id'];
-            foreach ($source_statuses as $status) {
-                $stmt = $conn->prepare("
-                    INSERT INTO contact_sprint_status (contact_id, sprint_id, met_this_period, contacted_by_user_id, notes)
-                    VALUES (?, ?, 0, ?, ?)
-                    ON DUPLICATE KEY UPDATE
-                        contacted_by_user_id = COALESCE(contacted_by_user_id, VALUES(contacted_by_user_id)),
-                        notes = COALESCE(notes, VALUES(notes))
-                ");
-                $stmt->bind_param("iiis", $status['contact_id'], $future_id, $status['contacted_by_user_id'], $status['notes']);
-                $stmt->execute();
-                $synced_count++;
-            }
-        }
-        
-        send_response(['success' => true, 'synced_count' => $synced_count, 'sprints_updated' => count($future_sprints)]);
-        break;
-
-    // ==================== FORMAT OPTIONS ENDPOINTS ====================
-    
-    case 'getFormatOptions':
-        if (!has_permission('format_option', 'view')) send_error('Permission denied to view format options.');
-        
-        $include_inactive = isset($_GET['include_inactive']) && $_GET['include_inactive'] === 'true';
-        
-        if ($include_inactive) {
-            $options = $conn->query("SELECT * FROM format_options ORDER BY sort_order ASC")->fetch_all(MYSQLI_ASSOC);
-        } else {
-            $options = $conn->query("SELECT * FROM format_options WHERE is_active = 1 ORDER BY sort_order ASC")->fetch_all(MYSQLI_ASSOC);
-        }
-        
-        send_response(['formatOptions' => $options]);
-        break;
-
-    case 'saveFormatOption':
-        $data = json_decode(file_get_contents('php://input'), true);
-        $permission = empty($data['id']) ? 'create' : 'update';
-        if (!has_permission('format_option', $permission)) send_error('Permission denied to ' . $permission . ' format options.');
-        
-        $id = !empty($data['id']) ? intval($data['id']) : null;
-        $name = trim($data['name'] ?? '');
-        $is_active = isset($data['is_active']) ? (bool)$data['is_active'] : true;
-        $sort_order = intval($data['sort_order'] ?? 0);
-        
-        if (empty($name)) send_error('Name is required', 400);
-        
-        if ($id) {
-            $stmt = $conn->prepare("UPDATE format_options SET name = ?, is_active = ?, sort_order = ? WHERE id = ?");
-            $stmt->bind_param("siii", $name, $is_active, $sort_order, $id);
-        } else {
-            $stmt = $conn->prepare("INSERT INTO format_options (name, is_active, sort_order) VALUES (?, ?, ?)");
-            $stmt->bind_param("sii", $name, $is_active, $sort_order);
-        }
-        $stmt->execute();
-        
-        send_response(['success' => true, 'id' => $id ?: $conn->insert_id]);
-        break;
-
-    case 'deleteFormatOption':
-        if (!has_permission('format_option', 'delete')) send_error('Permission denied to delete format options.');
-        
-        $id = intval($_GET['id'] ?? 0);
-        if ($id <= 0) send_error('Invalid format option ID', 400);
-        
-        $stmt = $conn->prepare("DELETE FROM format_options WHERE id = ?");
-        $stmt->bind_param("i", $id);
-        $stmt->execute();
-        
-        send_response(['success' => $stmt->affected_rows > 0]);
         break;
 
     // ==================== EXISTING CRUD ENDPOINTS ====================
@@ -2263,22 +1884,13 @@ switch ($action) {
             $types .= "s";
         }
         
-        // Filter by sprint
-        if (!empty($_GET['filter_sprint_id'])) {
-            $where_clauses[] = "cn.sprint_id = ?";
-            $params[] = intval($_GET['filter_sprint_id']);
-            $types .= "i";
-        }
-        
         $where_sql = implode(" AND ", $where_clauses);
-        
+
         $sql = "
-            SELECT cn.*, 
-                   u.username AS createdByUsername,
-                   s.name AS sprintName
+            SELECT cn.*,
+                   u.username AS createdByUsername
             FROM contact_notes cn
             LEFT JOIN users u ON cn.user_id = u.id
-            LEFT JOIN sprints s ON cn.sprint_id = s.id
             WHERE {$where_sql}
             ORDER BY cn.created_at DESC
         ";
@@ -2308,27 +1920,27 @@ switch ($action) {
         
         $note_id = !empty($data['id']) ? intval($data['id']) : null;
         $contact_id = intval($data['contact_id']);
-        $sprint_id = !empty($data['sprint_id']) ? intval($data['sprint_id']) : null;
+        $note_date = !empty($data['note_date']) ? $data['note_date'] : null;
         $interaction_type = $data['interaction_type'] ?? '';
         $note_text = $data['note_text'];
         $user_id = $_SESSION['user_id'];
-        
+
         if ($note_id) {
             // Update existing note - check ownership
             $check_stmt = $conn->prepare("SELECT user_id FROM contact_notes WHERE id = ?");
             $check_stmt->bind_param("i", $note_id);
             $check_stmt->execute();
             $existing = $check_stmt->get_result()->fetch_assoc();
-            
+
             if (!$existing) send_error('Note not found', 404);
             if ($existing['user_id'] != $_SESSION['user_id']) send_error('You can only edit your own notes', 403);
-            
-            $stmt = $conn->prepare("UPDATE contact_notes SET sprint_id = ?, interaction_type = ?, note_text = ? WHERE id = ?");
-            $stmt->bind_param("issi", $sprint_id, $interaction_type, $note_text, $note_id);
+
+            $stmt = $conn->prepare("UPDATE contact_notes SET note_date = ?, interaction_type = ?, note_text = ? WHERE id = ?");
+            $stmt->bind_param("sssi", $note_date, $interaction_type, $note_text, $note_id);
         } else {
             // Insert new note
-            $stmt = $conn->prepare("INSERT INTO contact_notes (contact_id, sprint_id, user_id, interaction_type, note_text) VALUES (?, ?, ?, ?, ?)");
-            $stmt->bind_param("iiiss", $contact_id, $sprint_id, $user_id, $interaction_type, $note_text);
+            $stmt = $conn->prepare("INSERT INTO contact_notes (contact_id, note_date, user_id, interaction_type, note_text) VALUES (?, ?, ?, ?, ?)");
+            $stmt->bind_param("isiss", $contact_id, $note_date, $user_id, $interaction_type, $note_text);
         }
         
         if ($stmt->execute()) {
@@ -2622,22 +2234,13 @@ switch ($action) {
             $types .= "s";
         }
         
-        // Filter by sprint
-        if (!empty($_GET['filter_sprint_id'])) {
-            $where_clauses[] = "on2.sprint_id = ?";
-            $params[] = intval($_GET['filter_sprint_id']);
-            $types .= "i";
-        }
-        
         $where_sql = implode(" AND ", $where_clauses);
-        
+
         $sql = "
-            SELECT on2.*, 
-                   u.username AS createdByUsername,
-                   s.name AS sprintName
+            SELECT on2.*,
+                   u.username AS createdByUsername
             FROM opportunity_notes on2
             LEFT JOIN users u ON on2.user_id = u.id
-            LEFT JOIN sprints s ON on2.sprint_id = s.id
             WHERE {$where_sql}
             ORDER BY on2.created_at DESC
         ";
@@ -2676,27 +2279,27 @@ switch ($action) {
             }
         }
         
-        $sprint_id = !empty($data['sprint_id']) ? intval($data['sprint_id']) : null;
+        $note_date = !empty($data['note_date']) ? $data['note_date'] : null;
         $interaction_type = $data['interaction_type'] ?? '';
         $note_text = $data['note_text'];
         $user_id = $_SESSION['user_id'];
-        
+
         if ($note_id) {
             // Update existing note - check ownership
             $check_stmt = $conn->prepare("SELECT user_id FROM opportunity_notes WHERE id = ?");
             $check_stmt->bind_param("i", $note_id);
             $check_stmt->execute();
             $existing = $check_stmt->get_result()->fetch_assoc();
-            
+
             if (!$existing) send_error('Note not found', 404);
             if ($existing['user_id'] != $_SESSION['user_id']) send_error('You can only edit your own notes', 403);
-            
-            $stmt = $conn->prepare("UPDATE opportunity_notes SET sprint_id = ?, interaction_type = ?, note_text = ? WHERE id = ?");
-            $stmt->bind_param("issi", $sprint_id, $interaction_type, $note_text, $note_id);
+
+            $stmt = $conn->prepare("UPDATE opportunity_notes SET note_date = ?, interaction_type = ?, note_text = ? WHERE id = ?");
+            $stmt->bind_param("sssi", $note_date, $interaction_type, $note_text, $note_id);
         } else {
             // Insert new note
-            $stmt = $conn->prepare("INSERT INTO opportunity_notes (opportunity_id, sprint_id, user_id, interaction_type, note_text) VALUES (?, ?, ?, ?, ?)");
-            $stmt->bind_param("iiiss", $opp_id, $sprint_id, $user_id, $interaction_type, $note_text);
+            $stmt = $conn->prepare("INSERT INTO opportunity_notes (opportunity_id, note_date, user_id, interaction_type, note_text) VALUES (?, ?, ?, ?, ?)");
+            $stmt->bind_param("isiss", $opp_id, $note_date, $user_id, $interaction_type, $note_text);
         }
         
         if ($stmt->execute()) {
@@ -2886,22 +2489,13 @@ switch ($action) {
             $types .= "s";
         }
         
-        // Filter by sprint
-        if (!empty($_GET['filter_sprint_id'])) {
-            $where_clauses[] = "pn.sprint_id = ?";
-            $params[] = intval($_GET['filter_sprint_id']);
-            $types .= "i";
-        }
-        
         $where_sql = implode(" AND ", $where_clauses);
-        
+
         $sql = "
-            SELECT pn.*, 
-                   u.username AS createdByUsername,
-                   s.name AS sprintName
+            SELECT pn.*,
+                   u.username AS createdByUsername
             FROM proposal_notes pn
             LEFT JOIN users u ON pn.user_id = u.id
-            LEFT JOIN sprints s ON pn.sprint_id = s.id
             WHERE {$where_sql}
             ORDER BY pn.created_at DESC
         ";
@@ -2940,27 +2534,27 @@ switch ($action) {
             }
         }
         
-        $sprint_id = !empty($data['sprint_id']) ? intval($data['sprint_id']) : null;
+        $note_date = !empty($data['note_date']) ? $data['note_date'] : null;
         $interaction_type = $data['interaction_type'] ?? '';
         $note_text = $data['note_text'];
         $user_id = $_SESSION['user_id'];
-        
+
         if ($note_id) {
             // Update existing note - check ownership
             $check_stmt = $conn->prepare("SELECT user_id FROM proposal_notes WHERE id = ?");
             $check_stmt->bind_param("i", $note_id);
             $check_stmt->execute();
             $existing = $check_stmt->get_result()->fetch_assoc();
-            
+
             if (!$existing) send_error('Note not found', 404);
             if ($existing['user_id'] != $_SESSION['user_id']) send_error('You can only edit your own notes', 403);
-            
-            $stmt = $conn->prepare("UPDATE proposal_notes SET sprint_id = ?, interaction_type = ?, note_text = ? WHERE id = ?");
-            $stmt->bind_param("issi", $sprint_id, $interaction_type, $note_text, $note_id);
+
+            $stmt = $conn->prepare("UPDATE proposal_notes SET note_date = ?, interaction_type = ?, note_text = ? WHERE id = ?");
+            $stmt->bind_param("sssi", $note_date, $interaction_type, $note_text, $note_id);
         } else {
             // Insert new note
-            $stmt = $conn->prepare("INSERT INTO proposal_notes (proposal_id, sprint_id, user_id, interaction_type, note_text) VALUES (?, ?, ?, ?, ?)");
-            $stmt->bind_param("iiiss", $prop_id, $sprint_id, $user_id, $interaction_type, $note_text);
+            $stmt = $conn->prepare("INSERT INTO proposal_notes (proposal_id, note_date, user_id, interaction_type, note_text) VALUES (?, ?, ?, ?, ?)");
+            $stmt->bind_param("isiss", $prop_id, $note_date, $user_id, $interaction_type, $note_text);
         }
         
         if ($stmt->execute()) {
@@ -3417,10 +3011,9 @@ switch ($action) {
         $where_sql = implode(" AND ", $where_clauses);
         
         $stmt = $conn->prepare("
-            SELECT en.*, u.username, COALESCE(u.display_name, u.username) AS display_name, s.name AS sprintName
+            SELECT en.*, u.username, COALESCE(u.display_name, u.username) AS display_name
             FROM event_notes en
             JOIN users u ON en.user_id = u.id
-            LEFT JOIN sprints s ON en.sprint_id = s.id
             WHERE $where_sql
             ORDER BY en.created_at DESC
         ");
@@ -3453,27 +3046,27 @@ switch ($action) {
             }
         }
         
-        $sprint_id = !empty($data['sprint_id']) ? intval($data['sprint_id']) : null;
+        $note_date = !empty($data['note_date']) ? $data['note_date'] : null;
         $interaction_type = $data['interaction_type'] ?? '';
         $note_text = $data['note_text'];
         $user_id = $_SESSION['user_id'];
-        
+
         if ($note_id) {
             // Update existing note - check ownership
             $check_stmt = $conn->prepare("SELECT user_id FROM event_notes WHERE id = ?");
             $check_stmt->bind_param("i", $note_id);
             $check_stmt->execute();
             $existing = $check_stmt->get_result()->fetch_assoc();
-            
+
             if (!$existing) send_error('Note not found', 404);
             if ($existing['user_id'] != $_SESSION['user_id']) send_error('You can only edit your own notes', 403);
-            
-            $stmt = $conn->prepare("UPDATE event_notes SET sprint_id = ?, interaction_type = ?, note_text = ? WHERE id = ?");
-            $stmt->bind_param("issi", $sprint_id, $interaction_type, $note_text, $note_id);
+
+            $stmt = $conn->prepare("UPDATE event_notes SET note_date = ?, interaction_type = ?, note_text = ? WHERE id = ?");
+            $stmt->bind_param("sssi", $note_date, $interaction_type, $note_text, $note_id);
         } else {
             // Insert new note
-            $stmt = $conn->prepare("INSERT INTO event_notes (event_id, sprint_id, user_id, interaction_type, note_text) VALUES (?, ?, ?, ?, ?)");
-            $stmt->bind_param("iiiss", $event_id, $sprint_id, $user_id, $interaction_type, $note_text);
+            $stmt = $conn->prepare("INSERT INTO event_notes (event_id, note_date, user_id, interaction_type, note_text) VALUES (?, ?, ?, ?, ?)");
+            $stmt->bind_param("isiss", $event_id, $note_date, $user_id, $interaction_type, $note_text);
         }
         
         if ($stmt->execute()) {

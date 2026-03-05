@@ -385,7 +385,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         .note-meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
         .note-user { font-weight: 600; color: #333; }
         .note-date { font-size: 0.85rem; color: #6c757d; }
-        .note-sprint { font-size: 0.75rem; padding: 2px 8px; background: linear-gradient(45deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1)); border-radius: 10px; color: #667eea; }
+        .note-date-badge { font-size: 0.75rem; padding: 2px 8px; background: linear-gradient(45deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1)); border-radius: 10px; color: #667eea; }
         .note-type { font-size: 0.75rem; padding: 2px 8px; background: #e9ecef; border-radius: 10px; color: #495057; }
         .note-actions { display: flex; gap: 5px; }
         .note-action-btn { background: none; border: none; cursor: pointer; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; transition: background 0.2s; }
@@ -1167,7 +1167,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         <div id="mytasks" class="tab-content">
             <div style="margin-bottom: 20px;">
                 <h2 style="margin: 0 0 5px 0; color: #333;">📋 My Tasks Dashboard</h2>
-                <p style="margin: 0; color: #6c757d;">Your outstanding items for the current sprint period.</p>
+                <p style="margin: 0; color: #6c757d;">Your outstanding items and upcoming deadlines.</p>
             </div>
             <div class="dashboard-cards" id="myTasksSummary"></div>
             <div id="myTasksContent"></div>
@@ -1228,11 +1228,10 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             <div id="federalContactsSubTab" class="sub-tab-content active">
                 <div style="margin-bottom: 20px;">
                     <h2 style="margin: 0 0 5px 0; color: #333;">Federal Contact Dashboard</h2>
-                    <p style="margin: 0; color: #6c757d;">Track stakeholder contacts during each sprint period. Click on a contact name to view details.</p>
+                    <p style="margin: 0; color: #6c757d;">Track stakeholder contacts. Click on a contact name to view details.</p>
                 </div>
                 <div class="dashboard-cards" id="contactsSummary"></div>
                 <div class="search-bar">
-                    <select id="sprintSelect" onchange="loadSprintData()"></select>
                     <select id="agencyFilter" onchange="filterContacts()">
                         <option value="ALL">All Agencies</option>
                     </select>
@@ -2587,12 +2586,6 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                     <label>Interaction Type</label>
                     <input type="text" id="noteFilterType" placeholder="Filter..." oninput="filterContactNotes()">
                 </div>
-                <div class="notes-filter-group">
-                    <label>Sprint</label>
-                    <select id="noteFilterSprint" onchange="filterContactNotes()">
-                        <option value="">All Sprints</option>
-                    </select>
-                </div>
             </div>
             <div id="contactNotesList">
                 <!-- Notes will be rendered here -->
@@ -2629,10 +2622,8 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 <input type="hidden" id="noteId">
                 <input type="hidden" id="noteContactId">
                 <div class="form-group" style="margin-bottom: 15px;">
-                    <label>Sprint</label>
-                    <select id="noteSprint" class="form-control" style="width: 100%; padding: 12px 15px; border: 2px solid #e1e5e9; border-radius: 8px;">
-                        <option value="">-- Select Sprint --</option>
-                    </select>
+                    <label>Date</label>
+                    <input type="date" id="noteDate" style="width: 100%; box-sizing: border-box; padding: 12px 15px; border: 2px solid #e1e5e9; border-radius: 8px;">
                 </div>
                 <div class="form-group" style="margin-bottom: 15px;">
                     <label>Interaction Type</label>
@@ -2686,12 +2677,6 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                     <label>Interaction Type</label>
                     <input type="text" id="oppNoteFilterType" placeholder="Filter..." oninput="filterOpportunityNotes()">
                 </div>
-                <div class="notes-filter-group">
-                    <label>Sprint</label>
-                    <select id="oppNoteFilterSprint" onchange="filterOpportunityNotes()">
-                        <option value="">All Sprints</option>
-                    </select>
-                </div>
             </div>
             <div id="oppNotesList">
                 <!-- Notes will be rendered here -->
@@ -2708,10 +2693,8 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 <input type="hidden" id="oppNoteId">
                 <input type="hidden" id="oppNoteOpportunityId">
                 <div class="form-group" style="margin-bottom: 15px;">
-                    <label>Sprint</label>
-                    <select id="oppNoteSprint" style="width: 100%; padding: 12px 15px; border: 2px solid #e1e5e9; border-radius: 8px;">
-                        <option value="">-- Select Sprint --</option>
-                    </select>
+                    <label>Date</label>
+                    <input type="date" id="oppNoteDate" style="width: 100%; box-sizing: border-box; padding: 12px 15px; border: 2px solid #e1e5e9; border-radius: 8px;">
                 </div>
                 <div class="form-group" style="margin-bottom: 15px;">
                     <label>Interaction Type</label>
@@ -2765,12 +2748,6 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                     <label>Interaction Type</label>
                     <input type="text" id="propNoteFilterType" placeholder="Filter..." oninput="filterProposalNotes()">
                 </div>
-                <div class="notes-filter-group">
-                    <label>Sprint</label>
-                    <select id="propNoteFilterSprint" onchange="filterProposalNotes()">
-                        <option value="">All Sprints</option>
-                    </select>
-                </div>
             </div>
             <div id="propNotesList">
                 <!-- Notes will be rendered here -->
@@ -2787,10 +2764,8 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 <input type="hidden" id="propNoteId">
                 <input type="hidden" id="propNoteProposalId">
                 <div class="form-group" style="margin-bottom: 15px;">
-                    <label>Sprint</label>
-                    <select id="propNoteSprint" style="width: 100%; padding: 12px 15px; border: 2px solid #e1e5e9; border-radius: 8px;">
-                        <option value="">-- Select Sprint --</option>
-                    </select>
+                    <label>Date</label>
+                    <input type="date" id="propNoteDate" style="width: 100%; box-sizing: border-box; padding: 12px 15px; border: 2px solid #e1e5e9; border-radius: 8px;">
                 </div>
                 <div class="form-group" style="margin-bottom: 15px;">
                     <label>Interaction Type</label>
@@ -2892,10 +2867,8 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 <input type="hidden" id="eventNoteId">
                 <input type="hidden" id="eventNoteEventId">
                 <div class="form-group" style="margin-bottom: 15px;">
-                    <label>Sprint</label>
-                    <select id="eventNoteSprint" style="width: 100%; padding: 12px 15px; border: 2px solid #e1e5e9; border-radius: 8px;">
-                        <option value="">-- Select Sprint --</option>
-                    </select>
+                    <label>Date</label>
+                    <input type="date" id="eventNoteDate" style="width: 100%; box-sizing: border-box; padding: 12px 15px; border: 2px solid #e1e5e9; border-radius: 8px;">
                 </div>
                 <div class="form-group" style="margin-bottom: 15px;">
                     <label>Interaction Type</label>
@@ -3057,9 +3030,8 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
     let contactOpportunities = {}, contactProposals = {}, companyContactOpportunities = {}, companyContactProposals = {};
     let opportunityContacts = {}, proposalContacts = {};
     let eventUsers = {}, eventFederalContacts = {}, eventCommercialContacts = {};
-    let users = [], sprints = [], formatOptions = [], userPermissions = {};
+    let users = [], userPermissions = {};
     let currentUserId = null, currentUsername = '', currentDisplayName = '', currentRole = '';
-    let currentSprintId = null, contactSprintData = {};
     let currentEditId = null;
     const API_URL = 'api.php';
     
@@ -3136,8 +3108,6 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             eventFederalContacts = data.eventFederalContacts || {};
             eventCommercialContacts = data.eventCommercialContacts || {};
             users = data.users || [];
-            sprints = data.sprints || [];
-            formatOptions = data.formatOptions || [];
             divisions = data.divisions || [];
             
             // Companies and Company Contacts
@@ -3175,7 +3145,6 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             populateCompanyFilters();
             setupSearch();
             setupCharts();
-            loadSprints();
             loadMyTasks();
             initCalendar();
             populateKanbanUserFilter();
@@ -3259,54 +3228,6 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         const agencyFilter = document.getElementById('agencyFilter');
         if (agencyFilter) {
             agencyFilter.innerHTML = '<option value="ALL">All Agencies</option>' + agencies.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
-        }
-    }
-
-    // Load sprints into select
-    function loadSprints() {
-        const sprintSelect = document.getElementById('sprintSelect');
-        if (!sprintSelect || !sprints.length) return;
-        
-        // Find current sprint
-        const today = new Date().toISOString().split('T')[0];
-        let defaultSprint = sprints.find(s => s.start_date <= today && s.end_date >= today);
-        if (!defaultSprint) defaultSprint = sprints[0];
-        
-        sprintSelect.innerHTML = sprints.map(s => 
-            `<option value="${s.id}" ${s.id == defaultSprint?.id ? 'selected' : ''}>${s.name}</option>`
-        ).join('');
-        
-        currentSprintId = defaultSprint?.id;
-        loadSprintData();
-    }
-
-    // Load sprint data for contacts
-    async function loadSprintData() {
-        const sprintId = document.getElementById('sprintSelect')?.value;
-        if (!sprintId) return;
-        
-        currentSprintId = sprintId;
-        
-        try {
-            const response = await fetch(`${API_URL}?action=getSprintData&sprint_id=${sprintId}`);
-            const data = await response.json();
-            
-            contactSprintData = {};
-            (data.contacts || []).forEach(c => {
-                contactSprintData[c.id] = c;
-            });
-            
-            // Update summary
-            const summary = data.summary || { total: 0, met: 0, notMet: 0 };
-            document.getElementById('contactsSummary').innerHTML = `
-                <div class="dashboard-card"><h3>${summary.total}</h3><p>Total Stakeholders</p></div>
-                <div class="dashboard-card"><h3>${summary.met}</h3><p>Contacted</p></div>
-                <div class="dashboard-card"><h3>${summary.notMet}</h3><p>Remaining</p></div>
-            `;
-            
-            populateContactsTable();
-        } catch (error) {
-            console.error('Error loading sprint data:', error);
         }
     }
 
@@ -3632,18 +3553,13 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         
         sortedAgencyIds.forEach(agencyId => {
             const group = agencyGroups[agencyId];
-            const metCount = group.contacts.filter(c => {
-                const sprintInfo = contactSprintData[c.id] || {};
-                return sprintInfo.met_this_period == 1;
-            }).length;
-            
+
             html += `
                 <div class="contact-agency-card" data-agency-id="${agencyId}">
                     <div class="contact-agency-header">
                         <div class="contact-agency-title">${group.name}</div>
                         <div class="contact-agency-meta">
                             <span>${group.contacts.length} contacts</span>
-                            <span>${metCount} met this sprint</span>
                         </div>
                     </div>
                     <div class="contact-list">
@@ -3652,38 +3568,22 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                             <div class="contact-division">Division</div>
                             <div class="contact-role">Role</div>
                             <div class="contact-owner">Owner</div>
-                            <div class="contact-last-date">Last Contact</div>
-                            <div class="contact-status">Status</div>
-                            <div class="contact-toggle">Met?</div>
                             <div class="contact-actions">Actions</div>
                         </div>
                         ${group.contacts.map(item => {
-                            const sprintInfo = contactSprintData[item.id] || {};
-                            const metThisPeriod = sprintInfo.met_this_period == 1;
                             const ownerName = item.ownerDisplayName || item.ownerUsername || users.find(u => u.id == item.owner_user_id)?.display_name || users.find(u => u.id == item.owner_user_id)?.username || '—';
-                            
+
                             return `
-                                <div class="contact-row ${metThisPeriod ? 'met' : 'not-met'}" data-contact-id="${item.id}">
+                                <div class="contact-row" data-contact-id="${item.id}">
                                     <div class="contact-name-cell">
                                         <span class="contact-name" onclick="showContactDetail(${item.id})">${item.firstName || ''} ${item.lastName || ''}</span>
                                         <span class="contact-email">${item.email || ''}</span>
                                     </div>
                                     <div class="contact-division">${item.division || '—'}</div>
                                     <div class="contact-role">${item.title || '—'}</div>
-                                    <div class="contact-owner"><span class="owner-badge">👤 ${ownerName}</span></div>
-                                    <div class="contact-last-date">${sprintInfo.last_contact_date ? new Date(sprintInfo.last_contact_date).toLocaleDateString() : '—'}</div>
-                                    <div class="contact-status">
-                                        <span class="status-badge ${metThisPeriod ? 'status-met' : 'status-notmet'}">${metThisPeriod ? '✓ Met' : '○ Not Met'}</span>
-                                    </div>
-                                    <div class="contact-toggle">
-                                        <div class="toggle" onclick="toggleContactMet(${item.id}, ${!metThisPeriod})">
-                                            <div class="toggle-slider ${metThisPeriod ? 'active' : ''}">
-                                                <div class="toggle-knob ${metThisPeriod ? 'active' : ''}"></div>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <div class="contact-owner"><span class="owner-badge">${ownerName}</span></div>
                                     <div class="contact-actions">
-                                        <button class="action-btn" style="background: #17a2b8;" onclick="openContactNotes(${item.id})" title="View Notes">📝</button>
+                                        <button class="action-btn" style="background: #17a2b8;" onclick="openContactNotes(${item.id})" title="View Notes">Notes</button>
                                         ${getActionsHtml('contact', item.id, true)}
                                     </div>
                                 </div>
@@ -4078,7 +3978,6 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             const summary = data.summary || {};
             document.getElementById('myTasksSummary').innerHTML = `
                 <div class="dashboard-card"><h3>${summary.tasks || 0}</h3><p>Active Tasks</p></div>
-                <div class="dashboard-card"><h3>${summary.contacts || 0}</h3><p>Contacts to Reach</p></div>
                 <div class="dashboard-card"><h3>${summary.opportunities || 0}</h3><p>Open Opportunities</p></div>
                 <div class="dashboard-card"><h3>${summary.proposals || 0}</h3><p>Active Proposals</p></div>
             `;
@@ -4107,29 +4006,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 content += '</tbody></table>';
             }
             content += '</div>';
-            
-            // Contacts section
-            content += `<div class="section-card">
-                <div class="section-header">
-                    <div class="section-title"><span>👥 Contacts to Reach</span><span class="section-count">${(data.contacts || []).length}</span></div>
-                    <button class="link-btn" onclick="showTab('contacts', document.querySelector('[data-tab-for=contact]'))">View All →</button>
-                </div>`;
-            if ((data.contacts || []).length === 0) {
-                content += '<div class="empty-state">✓ All contacts reached this sprint!</div>';
-            } else {
-                content += '<table class="data-table"><thead><tr><th>Contact</th><th>Agency</th><th>Role</th><th>Actions</th></tr></thead><tbody>';
-                (data.contacts || []).slice(0, 5).forEach(c => {
-                    content += `<tr>
-                        <td><span class="clickable-name" onclick="showContactDetail(${c.id})">${c.firstName || ''} ${c.lastName || ''}</span></td>
-                        <td>${c.agencyName || ''}</td>
-                        <td>${c.title || ''}</td>
-                        <td><button class="action-btn complete" onclick="toggleContactMet(${c.id}, true)">✓ Mark Met</button></td>
-                    </tr>`;
-                });
-                content += '</tbody></table>';
-            }
-            content += '</div>';
-            
+
             // Opportunities section
             content += `<div class="section-card">
                 <div class="section-header">
@@ -4203,60 +4080,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         }
     }
 
-    // Toggle contact met status
-    // Toggle contact met status
-    async function toggleContactMet(contactId, met) {
-        // Check if sprint is selected
-        if (!currentSprintId) {
-            alert('Please select a sprint period first.');
-            return;
-        }
-        
-        try {
-            const response = await fetch(`${API_URL}?action=updateSprintStatus`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contact_id: contactId,
-                    sprint_id: currentSprintId,
-                    met_this_period: met ? 1 : 0,
-                    last_contact_date: met ? new Date().toISOString().split('T')[0] : null,
-                    contacted_by_user_id: currentUserId
-                })
-            });
-            
-            const result = await response.json();
-            
-            if (!response.ok) {
-                throw new Error(result.error || 'Failed to update status');
-            }
-            
-            if (result.success) {
-                // Update local state immediately for responsive UI
-                if (contactSprintData[contactId]) {
-                    contactSprintData[contactId].met_this_period = met ? 1 : 0;
-                    if (met) {
-                        contactSprintData[contactId].last_contact_date = new Date().toISOString().split('T')[0];
-                    }
-                } else {
-                    contactSprintData[contactId] = {
-                        met_this_period: met ? 1 : 0,
-                        last_contact_date: met ? new Date().toISOString().split('T')[0] : null,
-                        contacted_by_user_id: currentUserId
-                    };
-                }
-                
-                // Refresh data from server
-                await loadSprintData();
-                await loadMyTasks();
-            } else {
-                throw new Error(result.error || 'Unknown error');
-            }
-        } catch (error) {
-            console.error('Error updating contact status:', error);
-            alert('Error updating contact status: ' + error.message);
-        }
-    }
+
 
     // Show contact detail modal
     function showContactDetail(contactId) {
@@ -4276,7 +4100,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         element?.classList.add('active');
         
         if (tabName === 'mytasks') loadMyTasks();
-        if (tabName === 'contacts') loadSprintData();
+        if (tabName === 'contacts') populateContactsTable();
         if (tabName === 'calendar') renderCalendar();
         if (tabName === 'kanban') renderKanbanBoard();
         if (tabName === 'deptcalendar') initDeptCalendar();
@@ -6399,11 +6223,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
     function renderContactInfo(contact) {
         const agency = agencies.find(a => a.id == contact.agency_id);
         const owner = users.find(u => u.id == contact.owner_user_id);
-        const sprintInfo = contactSprintData[contact.id] || {};
-        const metThisPeriod = sprintInfo.met_this_period == 1;
-        const contactedByName = sprintInfo.contacted_by_display_name || sprintInfo.contacted_by_username || users.find(u => u.id == sprintInfo.contacted_by_user_id)?.display_name || users.find(u => u.id == sprintInfo.contacted_by_user_id)?.username || '—';
-        const currentSprint = sprints.find(s => s.id == currentSprintId);
-        
+
         const html = `
             <div class="contact-info-row">
                 <div class="contact-info-label">Email</div>
@@ -6427,7 +6247,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             </div>
             <div class="contact-info-row">
                 <div class="contact-info-label">Owner</div>
-                <div class="contact-info-value"><span class="owner-badge">👤 ${contact.ownerUsername || '-'}</span></div>
+                <div class="contact-info-value"><span class="owner-badge">${contact.ownerUsername || '-'}</span></div>
             </div>
             <div class="contact-info-row">
                 <div class="contact-info-label">Status</div>
@@ -6439,28 +6259,6 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 <div class="contact-info-value" style="white-space: pre-wrap;">${contact.notes}</div>
             </div>
             ` : ''}
-            
-            <h4 style="margin-top: 25px; margin-bottom: 15px; color: #667eea; border-bottom: 2px solid #667eea; padding-bottom: 8px;">
-                Sprint Status ${currentSprint ? `(${currentSprint.name})` : ''}
-            </h4>
-            <div class="contact-info-row">
-                <div class="contact-info-label">Met Status</div>
-                <div class="contact-info-value"><span class="status-badge ${metThisPeriod ? 'status-met' : 'status-notmet'}">${metThisPeriod ? '✓ Met this period' : '○ Not met yet'}</span></div>
-            </div>
-            <div class="contact-info-row">
-                <div class="contact-info-label">Last Contact</div>
-                <div class="contact-info-value">${sprintInfo.last_contact_date ? new Date(sprintInfo.last_contact_date).toLocaleDateString() : '—'}</div>
-            </div>
-            <div class="contact-info-row">
-                <div class="contact-info-label">Contacted By</div>
-                <div class="contact-info-value">${contactedByName}</div>
-            </div>
-            ${sprintInfo.sprintNotes || sprintInfo.notes ? `
-            <div class="contact-info-row" style="flex-direction: column;">
-                <div class="contact-info-label" style="margin-bottom: 8px;">Sprint Notes</div>
-                <div class="contact-info-value" style="white-space: pre-wrap;">${sprintInfo.sprintNotes || sprintInfo.notes}</div>
-            </div>
-            ` : ''}
         `;
         
         document.getElementById('contactInfoSection').innerHTML = html;
@@ -6469,14 +6267,9 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
     function populateNoteFilters() {
         // Populate user filter
         const userSelect = document.getElementById('noteFilterUser');
-        userSelect.innerHTML = '<option value="">All Users</option>' + 
+        userSelect.innerHTML = '<option value="">All Users</option>' +
             users.map(u => `<option value="${u.id}">${u.display_name || u.username}</option>`).join('');
-        
-        // Populate sprint filter
-        const sprintSelect = document.getElementById('noteFilterSprint');
-        sprintSelect.innerHTML = '<option value="">All Sprints</option>' + 
-            sprints.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
-        
+
         // Clear other filters
         document.getElementById('noteFilterDateFrom').value = '';
         document.getElementById('noteFilterDateTo').value = '';
@@ -6497,13 +6290,11 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             const dateTo = document.getElementById('noteFilterDateTo').value;
             const userId = document.getElementById('noteFilterUser').value;
             const interactionType = document.getElementById('noteFilterType').value;
-            const sprintId = document.getElementById('noteFilterSprint').value;
-            
+
             if (dateFrom) params.append('filter_date_from', dateFrom);
             if (dateTo) params.append('filter_date_to', dateTo);
             if (userId) params.append('filter_user_id', userId);
             if (interactionType) params.append('filter_interaction_type', interactionType);
-            if (sprintId) params.append('filter_sprint_id', sprintId);
             
             const response = await fetch(`${API_URL}?${params.toString()}`);
             const data = await response.json();
@@ -6543,7 +6334,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                     <div class="note-meta">
                         <span class="note-user">${note.createdByUsername || 'Unknown'}</span>
                         <span class="note-date">${note.displayDate}</span>
-                        ${note.sprintName ? `<span class="note-sprint">${note.sprintName}</span>` : ''}
+                        ${note.note_date ? `<span class="note-date-badge">${new Date(note.note_date + 'T00:00:00').toLocaleDateString()}</span>` : ''}
                         ${note.interaction_type ? `<span class="note-type">${note.interaction_type}</span>` : ''}
                     </div>
                     ${note.canEdit || note.canDelete ? `
@@ -6572,15 +6363,10 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         document.getElementById('noteModalTitle').textContent = 'Add Note';
         document.getElementById('noteId').value = '';
         document.getElementById('noteContactId').value = currentContactId;
-        document.getElementById('noteSprint').value = '';
+        document.getElementById('noteDate').value = new Date().toISOString().split('T')[0];
         document.getElementById('noteInteractionType').value = '';
         document.getElementById('noteText').value = '';
-        
-        // Populate sprint dropdown
-        const sprintSelect = document.getElementById('noteSprint');
-        sprintSelect.innerHTML = '<option value="">-- Select Sprint --</option>' + 
-            sprints.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
-        
+
         document.getElementById('noteModal').style.display = 'block';
     }
     
@@ -6594,12 +6380,8 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         document.getElementById('noteContactId').value = currentContactId;
         document.getElementById('noteInteractionType').value = note.interaction_type || '';
         document.getElementById('noteText').value = note.note_text || '';
-        
-        // Populate sprint dropdown and select current
-        const sprintSelect = document.getElementById('noteSprint');
-        sprintSelect.innerHTML = '<option value="">-- Select Sprint --</option>' + 
-            sprints.map(s => `<option value="${s.id}" ${s.id == note.sprint_id ? 'selected' : ''}>${s.name}</option>`).join('');
-        
+        document.getElementById('noteDate').value = note.note_date || '';
+
         document.getElementById('noteModal').style.display = 'block';
     }
     
@@ -6609,7 +6391,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         const noteData = {
             id: document.getElementById('noteId').value || null,
             contact_id: document.getElementById('noteContactId').value,
-            sprint_id: document.getElementById('noteSprint').value || null,
+            note_date: document.getElementById('noteDate').value || null,
             interaction_type: document.getElementById('noteInteractionType').value,
             note_text: document.getElementById('noteText').value
         };
@@ -8756,10 +8538,6 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         userSelect.innerHTML = '<option value="">All Users</option>' + 
             users.map(u => `<option value="${u.id}">${u.display_name || u.username}</option>`).join('');
         
-        const sprintSelect = document.getElementById('oppNoteFilterSprint');
-        sprintSelect.innerHTML = '<option value="">All Sprints</option>' + 
-            sprints.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
-        
         document.getElementById('oppNoteFilterDateFrom').value = '';
         document.getElementById('oppNoteFilterDateTo').value = '';
         document.getElementById('oppNoteFilterType').value = '';
@@ -8778,13 +8556,11 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             const dateTo = document.getElementById('oppNoteFilterDateTo').value;
             const userId = document.getElementById('oppNoteFilterUser').value;
             const interactionType = document.getElementById('oppNoteFilterType').value;
-            const sprintId = document.getElementById('oppNoteFilterSprint').value;
-            
+
             if (dateFrom) params.append('filter_date_from', dateFrom);
             if (dateTo) params.append('filter_date_to', dateTo);
             if (userId) params.append('filter_user_id', userId);
             if (interactionType) params.append('filter_interaction_type', interactionType);
-            if (sprintId) params.append('filter_sprint_id', sprintId);
             
             const response = await fetch(`${API_URL}?${params.toString()}`);
             const data = await response.json();
@@ -8822,7 +8598,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                     <div class="note-meta">
                         <span class="note-user">${note.createdByUsername || 'Unknown'}</span>
                         <span class="note-date">${note.displayDate}</span>
-                        ${note.sprintName ? `<span class="note-sprint">${note.sprintName}</span>` : ''}
+                        ${note.note_date ? `<span class="note-date-badge">${new Date(note.note_date + 'T00:00:00').toLocaleDateString()}</span>` : ''}
                         ${note.interaction_type ? `<span class="note-type">${note.interaction_type}</span>` : ''}
                     </div>
                     ${note.canEdit || note.canDelete ? `
@@ -8844,14 +8620,10 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         document.getElementById('oppNoteModalTitle').textContent = 'Add Note';
         document.getElementById('oppNoteId').value = '';
         document.getElementById('oppNoteOpportunityId').value = currentOpportunityId;
-        document.getElementById('oppNoteSprint').value = '';
+        document.getElementById('oppNoteDate').value = new Date().toISOString().split('T')[0];
         document.getElementById('oppNoteInteractionType').value = '';
         document.getElementById('oppNoteText').value = '';
-        
-        const sprintSelect = document.getElementById('oppNoteSprint');
-        sprintSelect.innerHTML = '<option value="">-- Select Sprint --</option>' + 
-            sprints.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
-        
+
         document.getElementById('oppNoteModal').style.display = 'block';
     }
     
@@ -8865,11 +8637,8 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         document.getElementById('oppNoteOpportunityId').value = currentOpportunityId;
         document.getElementById('oppNoteInteractionType').value = note.interaction_type || '';
         document.getElementById('oppNoteText').value = note.note_text || '';
-        
-        const sprintSelect = document.getElementById('oppNoteSprint');
-        sprintSelect.innerHTML = '<option value="">-- Select Sprint --</option>' + 
-            sprints.map(s => `<option value="${s.id}" ${s.id == note.sprint_id ? 'selected' : ''}>${s.name}</option>`).join('');
-        
+        document.getElementById('oppNoteDate').value = note.note_date || '';
+
         document.getElementById('oppNoteModal').style.display = 'block';
     }
     
@@ -8879,7 +8648,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         const noteData = {
             id: document.getElementById('oppNoteId').value || null,
             opportunity_id: document.getElementById('oppNoteOpportunityId').value,
-            sprint_id: document.getElementById('oppNoteSprint').value || null,
+            note_date: document.getElementById('oppNoteDate').value || null,
             interaction_type: document.getElementById('oppNoteInteractionType').value,
             note_text: document.getElementById('oppNoteText').value
         };
@@ -9567,10 +9336,6 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         userSelect.innerHTML = '<option value="">All Users</option>' + 
             users.map(u => `<option value="${u.id}">${u.display_name || u.username}</option>`).join('');
         
-        const sprintSelect = document.getElementById('propNoteFilterSprint');
-        sprintSelect.innerHTML = '<option value="">All Sprints</option>' + 
-            sprints.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
-        
         document.getElementById('propNoteFilterDateFrom').value = '';
         document.getElementById('propNoteFilterDateTo').value = '';
         document.getElementById('propNoteFilterType').value = '';
@@ -9586,13 +9351,11 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         const dateTo = document.getElementById('propNoteFilterDateTo')?.value;
         const userId = document.getElementById('propNoteFilterUser')?.value;
         const interactionType = document.getElementById('propNoteFilterType')?.value;
-        const sprintId = document.getElementById('propNoteFilterSprint')?.value;
-        
+
         if (dateFrom) url += `&filter_date_from=${dateFrom}`;
         if (dateTo) url += `&filter_date_to=${dateTo}`;
         if (userId) url += `&filter_user_id=${userId}`;
         if (interactionType) url += `&filter_interaction_type=${encodeURIComponent(interactionType)}`;
-        if (sprintId) url += `&filter_sprint_id=${sprintId}`;
         
         try {
             const response = await fetch(url);
@@ -9624,9 +9387,9 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             <div class="note-card">
                 <div class="note-header">
                     <div class="note-meta">
-                        <span class="note-user">👤 ${note.createdByUsername || 'Unknown'}</span>
-                        ${note.sprintName ? `<span class="note-sprint">🏃 ${note.sprintName}</span>` : ''}
-                        ${note.interaction_type ? `<span class="note-type">📞 ${note.interaction_type}</span>` : ''}
+                        <span class="note-user">${note.createdByUsername || 'Unknown'}</span>
+                        ${note.note_date ? `<span class="note-date-badge">${new Date(note.note_date + 'T00:00:00').toLocaleDateString()}</span>` : ''}
+                        ${note.interaction_type ? `<span class="note-type">${note.interaction_type}</span>` : ''}
                     </div>
                     <div class="note-date">${note.displayDate}</div>
                 </div>
@@ -9645,8 +9408,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         document.getElementById('propNoteModalTitle').textContent = 'Add Note';
         document.getElementById('propNoteId').value = '';
         document.getElementById('propNoteProposalId').value = currentProposalId;
-        document.getElementById('propNoteSprint').innerHTML = '<option value="">-- Select Sprint --</option>' + 
-            sprints.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+        document.getElementById('propNoteDate').value = new Date().toISOString().split('T')[0];
         document.getElementById('propNoteInteractionType').value = '';
         document.getElementById('propNoteText').value = '';
         editingPropNoteId = null;
@@ -9660,8 +9422,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         document.getElementById('propNoteModalTitle').textContent = 'Edit Note';
         document.getElementById('propNoteId').value = note.id;
         document.getElementById('propNoteProposalId').value = currentProposalId;
-        document.getElementById('propNoteSprint').innerHTML = '<option value="">-- Select Sprint --</option>' + 
-            sprints.map(s => `<option value="${s.id}" ${s.id == note.sprint_id ? 'selected' : ''}>${s.name}</option>`).join('');
+        document.getElementById('propNoteDate').value = note.note_date || '';
         document.getElementById('propNoteInteractionType').value = note.interaction_type || '';
         document.getElementById('propNoteText').value = note.note_text || '';
         editingPropNoteId = noteId;
@@ -9674,7 +9435,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         const noteData = {
             id: document.getElementById('propNoteId').value || null,
             proposal_id: currentProposalId,
-            sprint_id: document.getElementById('propNoteSprint').value || null,
+            note_date: document.getElementById('propNoteDate').value || null,
             interaction_type: document.getElementById('propNoteInteractionType').value,
             note_text: document.getElementById('propNoteText').value
         };
@@ -11834,7 +11595,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                         <span class="note-date">${formatDate(note.created_at)}</span>
                     </div>
                     ${note.interaction_type ? `<div class="note-type">${escapeHtml(note.interaction_type)}</div>` : ''}
-                    ${note.sprintName ? `<div style="font-size: 0.85rem; color: #667eea; margin-bottom: 5px;">📅 ${escapeHtml(note.sprintName)}</div>` : ''}
+                    ${note.note_date ? `<div style="font-size: 0.85rem; color: #667eea; margin-bottom: 5px;">${new Date(note.note_date + 'T00:00:00').toLocaleDateString()}</div>` : ''}
                     <div class="note-content">${escapeHtml(note.note_text)}</div>
                     ${isOwner ? `
                         <div class="note-actions">
@@ -11853,12 +11614,8 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         document.getElementById('eventNoteEventId').value = currentEventId;
         document.getElementById('eventNoteInteractionType').value = '';
         document.getElementById('eventNoteText').value = '';
-        
-        // Populate sprint dropdown
-        const sprintSelect = document.getElementById('eventNoteSprint');
-        sprintSelect.innerHTML = '<option value="">-- Select Sprint --</option>' + 
-            sprints.map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
-        
+        document.getElementById('eventNoteDate').value = new Date().toISOString().split('T')[0];
+
         document.getElementById('eventNoteModal').style.display = 'block';
     }
     
@@ -11875,12 +11632,8 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         document.getElementById('eventNoteEventId').value = note.event_id;
         document.getElementById('eventNoteInteractionType').value = note.interaction_type || '';
         document.getElementById('eventNoteText').value = note.note_text || '';
-        
-        // Populate sprint dropdown
-        const sprintSelect = document.getElementById('eventNoteSprint');
-        sprintSelect.innerHTML = '<option value="">-- Select Sprint --</option>' + 
-            sprints.map(s => `<option value="${s.id}" ${s.id == note.sprint_id ? 'selected' : ''}>${escapeHtml(s.name)}</option>`).join('');
-        
+        document.getElementById('eventNoteDate').value = note.note_date || '';
+
         document.getElementById('eventNoteModal').style.display = 'block';
     }
     
@@ -11890,7 +11643,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         const noteData = {
             id: document.getElementById('eventNoteId').value || null,
             event_id: document.getElementById('eventNoteEventId').value,
-            sprint_id: document.getElementById('eventNoteSprint').value || null,
+            note_date: document.getElementById('eventNoteDate').value || null,
             interaction_type: document.getElementById('eventNoteInteractionType').value,
             note_text: document.getElementById('eventNoteText').value
         };
