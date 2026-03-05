@@ -15457,7 +15457,6 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                     <div class="opp-section">
                         <div class="opp-section-header">
                             <h3><span class="section-icon">📌</span> Capture Milestones</h3>
-                            <button class="opp-table-btn add" onclick="createCaptureMilestoneTasks()">+ Add Task</button>
                         </div>
                         <div class="opp-milestones">
                             <label class="opp-milestone">
