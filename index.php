@@ -64,7 +64,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         .action-btn.view { background: #6c757d; }
         .action-btn.complete { background: #28a745; }
         .dashboard-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
-        .dashboard-card { background: white; color: #333; padding: 25px; border-radius: 15px; text-align: center; border-left: 5px solid #667eea; box-shadow: 0 2px 8px rgba(0,0,0,0.08); transition: transform 0.2s, box-shadow 0.2s; }
+        .dashboard-card { background: white; color: #333; padding: 25px; border-radius: 15px; text-align: center; border-left: 5px solid #667eea; box-shadow: 0 2px 8px rgba(0,0,0,0.08); transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; }
         .dashboard-card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.12); }
         .dashboard-card:nth-child(2) { border-left-color: #764ba2; }
         .dashboard-card:nth-child(3) { border-left-color: #28a745; }
@@ -72,6 +72,11 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         .dashboard-card:nth-child(5) { border-left-color: #17a2b8; }
         .dashboard-card h3 { font-size: 2.5em; margin-bottom: 5px; background: linear-gradient(45deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
         .dashboard-card p { color: #6c757d; }
+        /* Events filter bar */
+        .filter-bar { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; align-items: center; }
+        .filter-bar input { flex: 1; min-width: 200px; padding: 12px 15px; border: 2px solid #e1e5e9; border-radius: 8px; font-size: 14px; transition: border-color 0.2s, box-shadow 0.2s; }
+        .filter-bar input:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15); }
+        .filter-bar select { padding: 12px 15px; border: 2px solid #e1e5e9; border-radius: 8px; background: white; font-size: 14px; min-width: 150px; }
         .search-bar { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; align-items: center; }
         .search-bar input { flex: 1; min-width: 200px; padding: 12px 15px; border: 2px solid #e1e5e9; border-radius: 8px; transition: border-color 0.2s, box-shadow 0.2s; }
         .search-bar input:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15); }
@@ -556,7 +561,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         .sub-tabs { display: flex; gap: 5px; margin-bottom: 20px; background: rgba(102, 126, 234, 0.1); border-radius: 10px; padding: 5px; }
         .sub-tab { flex: 1; background: transparent; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: 500; color: #667eea; transition: all 0.3s ease; font-size: 0.95rem; }
         .sub-tab:hover { background: rgba(255, 255, 255, 0.5); }
-        .sub-tab.active { background: white; color: #333; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .sub-tab.active { background: white; color: #333; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-bottom: 3px solid #667eea; font-weight: 600; }
         .sub-tab-content { display: none; }
         .sub-tab-content.active { display: block; animation: fadeIn 0.3s ease-in-out; }
         
@@ -1161,28 +1166,28 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         <!-- Dashboard Tab -->
         <div id="dashboard" class="tab-content active">
             <div class="dashboard-cards">
-                <div class="dashboard-card"><h3 id="totalAgencies">0</h3><p>Government Agencies</p></div>
-                <div class="dashboard-card"><h3 id="totalContacts">0</h3><p>Active Contacts</p></div>
-                <div class="dashboard-card"><h3 id="totalOpportunities">0</h3><p>Open Opportunities</p></div>
-                <div class="dashboard-card"><h3 id="totalProposals">0</h3><p>Active Proposals</p></div>
+                <div class="dashboard-card" onclick="navigateToTab('contacts'); showContactSubTab('agencies');" title="View Agencies"><h3 id="totalAgencies">0</h3><p>Government Agencies</p></div>
+                <div class="dashboard-card" onclick="navigateToTab('contacts');" title="View Contacts"><h3 id="totalContacts">0</h3><p>Active Contacts</p></div>
+                <div class="dashboard-card" onclick="navigateToTab('opportunities');" title="View Opportunities"><h3 id="totalOpportunities">0</h3><p>Open Opportunities</p></div>
+                <div class="dashboard-card" onclick="navigateToTab('proposals');" title="View Proposals"><h3 id="totalProposals">0</h3><p>Active Proposals</p></div>
             </div>
             <div class="stats-grid">
                 <div class="stats-card clickable-card" onclick="navigateToTab('opportunities')" title="Click to view Opportunities">
-                    <h3 style="margin: 0 0 15px 0; color: #333;">Opportunities by Agency <span style="font-size: 0.5em; color: #667eea;">→ View All</span></h3>
+                    <h3 style="margin: 0 0 15px 0; color: #333;">Opportunities by Agency <span style="font-size: 0.5em; color: #667eea; background: rgba(102,126,234,0.1); padding: 3px 10px; border-radius: 12px; margin-left: 8px;">→ View All</span></h3>
                     <canvas id="agencyChart"></canvas>
                 </div>
                 <div class="stats-card clickable-card" onclick="navigateToTab('proposals')" title="Click to view Proposals">
-                    <h3 style="margin: 0 0 15px 0; color: #333;">Proposals by Agency <span style="font-size: 0.5em; color: #28a745;">→ View All</span></h3>
+                    <h3 style="margin: 0 0 15px 0; color: #333;">Proposals by Agency <span style="font-size: 0.5em; color: #28a745; background: rgba(40,167,69,0.1); padding: 3px 10px; border-radius: 12px; margin-left: 8px;">→ View All</span></h3>
                     <canvas id="proposalAgencyChart"></canvas>
                 </div>
             </div>
             <div class="stats-grid" style="margin-top: 20px;">
                 <div class="stats-card clickable-card" onclick="navigateToTab('opportunities')" title="Click to view Opportunities">
-                    <h3 style="margin: 0 0 15px 0; color: #333;">Opportunity Pipeline <span style="font-size: 0.5em; color: #667eea;">→ View All</span></h3>
+                    <h3 style="margin: 0 0 15px 0; color: #333;">Opportunity Pipeline <span style="font-size: 0.5em; color: #667eea; background: rgba(102,126,234,0.1); padding: 3px 10px; border-radius: 12px; margin-left: 8px;">→ View All</span></h3>
                     <canvas id="pipelineChart"></canvas>
                 </div>
                 <div class="stats-card clickable-card" onclick="navigateToTab('proposals')" title="Click to view Proposals">
-                    <h3 style="margin: 0 0 15px 0; color: #333;">Proposal Pipeline <span style="font-size: 0.5em; color: #28a745;">→ View All</span></h3>
+                    <h3 style="margin: 0 0 15px 0; color: #333;">Proposal Pipeline <span style="font-size: 0.5em; color: #28a745; background: rgba(40,167,69,0.1); padding: 3px 10px; border-radius: 12px; margin-left: 8px;">→ View All</span></h3>
                     <canvas id="proposalPipelineChart"></canvas>
                 </div>
             </div>
@@ -3469,7 +3474,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                             <span>${agency.location || 'N/A'}</span>
                             <span>${agency.type || 'N/A'}</span>
                             <span class="status-badge status-${(agency.status || '').toLowerCase()}">${agency.status || ''}</span>
-                            <span>${agency.contactCount || 0} contacts</span>
+                            <span>${agency.contactCount || 0} ${Number(agency.contactCount) === 1 ? 'contact' : 'contacts'}</span>
                         </div>
                         <div class="agency-card-actions">
                             ${getActionsHtml('agency', agency.id)}
