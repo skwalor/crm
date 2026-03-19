@@ -1,7 +1,13 @@
 <?php
-// Enable error reporting for debugging
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
+// Debug mode: set to false in production
+$debug_mode = isset($_GET['debug']) && $_GET['debug'] === '1';
+if ($debug_mode) {
+    error_reporting(E_ALL);
+    ini_set('display_errors', 1);
+} else {
+    error_reporting(0);
+    ini_set('display_errors', 0);
+}
 
 session_start();
 require_once 'db_connect.php';
@@ -188,7 +194,15 @@ $conn->close();
     <title>Admin Panel - User Management</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; margin: 0; padding: 20px; color: #333; }
-        .container { max-width: 1200px; margin: 20px auto; background-color: #ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15); }
+        .admin-header { display: flex; justify-content: space-between; align-items: center; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-radius: 15px; padding: 20px 30px; margin-bottom: 30px; max-width: 1200px; margin-left: auto; margin-right: auto; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1); }
+        .admin-header-title { font-size: 1.3em; font-weight: bold; color: #667eea; display: flex; align-items: center; gap: 10px; }
+        .admin-header-nav { display: flex; align-items: center; gap: 10px; }
+        .admin-header-nav a { padding: 8px 16px; border-radius: 8px; text-decoration: none; font-weight: 500; font-size: 0.9rem; transition: all 0.2s; }
+        .admin-header-nav .back-btn { background: linear-gradient(45deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1)); color: #667eea; border: 2px solid #667eea; }
+        .admin-header-nav .back-btn:hover { background: linear-gradient(45deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2)); }
+        .admin-header-nav .logout-btn { background: #dc3545; color: white; border: none; }
+        .admin-header-nav .logout-btn:hover { background: #c82333; }
+        .container { max-width: 1200px; margin: 0 auto; background-color: #ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15); }
         h1 { color: #2c3e50; border-bottom: 2px solid #667eea; padding-bottom: 10px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
         h2 { color: #2c3e50; margin-top: 0; }
         .message { padding: 15px; margin-bottom: 20px; border-radius: 8px; border: 1px solid transparent; }
@@ -207,7 +221,7 @@ $conn->close();
         .user-table, .archive-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         .user-table th, .user-table td, .archive-table th, .archive-table td { padding: 12px 10px; text-align: left; border-bottom: 1px solid #e0e0e0; vertical-align: middle; }
         .user-table th, .archive-table th { background-color: #f8f9fa; font-weight: 600; font-size: 0.85rem; text-transform: uppercase; color: #555; }
-        .user-table tr:hover, .archive-table tr:hover { background-color: #f8f9ff; }
+        .user-table tr:hover, .archive-table tr:hover { background-color: #f0f4ff; }
         .user-table tr.inactive-user { background-color: #f8f8f8; opacity: 0.7; }
         .status-badge { padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
         .status-approved { background: #d4edda; color: #155724; }
@@ -246,11 +260,12 @@ $conn->close();
         .archive-meta { font-size: 0.75rem; color: #888; margin-top: 3px; }
         
         /* Modal Styles */
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); backdrop-filter: blur(4px); }
         .modal-content { background-color: #fff; margin: 10% auto; padding: 30px; border-radius: 12px; width: 90%; max-width: 400px; box-shadow: 0 5px 30px rgba(0,0,0,0.3); }
         .modal-content h3 { margin-top: 0; color: #333; }
         .modal-content input[type="password"] { width: 100%; padding: 12px; border: 2px solid #e1e5e9; border-radius: 8px; margin: 15px 0; font-size: 14px; box-sizing: border-box; }
-        .modal-content input[type="password"]:focus { outline: none; border-color: #667eea; }
+        .modal-content input[type="password"]:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15); }
+        #userSearch:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15); }
         .modal-buttons { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
         .modal-buttons .btn { padding: 10px 20px; }
         .btn-cancel { background-color: #6c757d; color: white; }
@@ -264,6 +279,15 @@ $conn->close();
     </style>
 </head>
 <body>
+    <!-- Branded Header -->
+    <div class="admin-header">
+        <div class="admin-header-title">⚙️ Admin Panel</div>
+        <div class="admin-header-nav">
+            <a href="index.php" class="back-btn">← Back to CRM</a>
+            <a href="logout.php" class="logout-btn">Logout</a>
+        </div>
+    </div>
+
     <div class="container">
         <h1>⚙️ Admin Panel</h1>
 
@@ -271,7 +295,7 @@ $conn->close();
             <div class="message <?php echo $message_type; ?>"><?php echo htmlspecialchars($message); ?></div>
         <?php endif; ?>
         
-        <?php if (!empty($debug_info)): ?>
+        <?php if ($debug_mode && !empty($debug_info)): ?>
             <div class="message" style="background: #fff3cd; color: #856404;"><?php echo htmlspecialchars($debug_info); ?></div>
         <?php endif; ?>
         
@@ -284,6 +308,7 @@ $conn->close();
         <!-- User Management Tab -->
         <div id="users-tab" class="tab-content active">
             <h2>👥 User Management <span class="user-count"><?php echo count($users); ?> users</span></h2>
+            <input type="text" id="userSearch" placeholder="Search users by name or role..." oninput="filterUsers()" style="width: 100%; padding: 12px; border: 2px solid #e1e5e9; border-radius: 8px; font-size: 14px; margin-bottom: 10px; box-sizing: border-box;">
             <table class="user-table">
                 <thead>
                     <tr>
@@ -402,7 +427,35 @@ $conn->close();
         </div>
     </div>
     
+    <!-- Toast Container -->
+    <div id="toastContainer" style="position:fixed;bottom:24px;right:24px;z-index:10000;display:flex;flex-direction:column-reverse;gap:10px;"></div>
+    <style>
+        .toast{padding:14px 22px;border-radius:10px;color:#fff;font-weight:500;font-size:0.92rem;box-shadow:0 4px 16px rgba(0,0,0,0.18);animation:toastIn 0.3s ease;max-width:400px;}
+        .toast.success{background:#28a745;} .toast.error{background:#dc3545;} .toast.info{background:#667eea;}
+        .toast.fade-out{animation:toastOut 0.3s ease forwards;}
+        @keyframes toastIn{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+        @keyframes toastOut{from{opacity:1;transform:translateY(0);}to{opacity:0;transform:translateY(20px);}}
+    </style>
     <script>
+        function showToast(msg, type='info', duration=3500) {
+            const c = document.getElementById('toastContainer');
+            const t = document.createElement('div');
+            t.className = 'toast ' + type;
+            t.textContent = msg;
+            c.appendChild(t);
+            setTimeout(() => { t.classList.add('fade-out'); setTimeout(() => t.remove(), 300); }, duration);
+        }
+
+        // User search filter
+        function filterUsers() {
+            const query = document.getElementById('userSearch').value.toLowerCase();
+            const rows = document.querySelectorAll('.user-table tbody tr');
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(query) ? '' : 'none';
+            });
+        }
+
         // Tab switching
         function showAdminTab(tabName, element) {
             // Hide all tabs
@@ -566,14 +619,14 @@ $conn->close();
                 const data = await response.json();
                 
                 if (data.success) {
-                    alert('Opportunity restored successfully!');
+                    showToast('Opportunity restored successfully!', 'success');
                     loadArchivedRecords();
                 } else {
-                    alert('Error: ' + (data.error || 'Failed to restore opportunity'));
+                    showToast('Error: ' + (data.error || 'Failed to restore opportunity'), 'error');
                 }
             } catch (error) {
                 console.error('Error restoring opportunity:', error);
-                alert('Error restoring opportunity. Please try again.');
+                showToast('Error restoring opportunity. Please try again.', 'error');
             }
         }
         
@@ -590,14 +643,14 @@ $conn->close();
                 const data = await response.json();
                 
                 if (data.success) {
-                    alert('Proposal restored successfully!');
+                    showToast('Proposal restored successfully!', 'success');
                     loadArchivedRecords();
                 } else {
-                    alert('Error: ' + (data.error || 'Failed to restore proposal'));
+                    showToast('Error: ' + (data.error || 'Failed to restore proposal'), 'error');
                 }
             } catch (error) {
                 console.error('Error restoring proposal:', error);
-                alert('Error restoring proposal. Please try again.');
+                showToast('Error restoring proposal. Please try again.', 'error');
             }
         }
         
@@ -615,14 +668,14 @@ $conn->close();
                 const data = await response.json();
                 
                 if (data.success) {
-                    alert('Opportunity permanently deleted.');
+                    showToast('Opportunity permanently deleted.', 'success');
                     loadArchivedRecords();
                 } else {
-                    alert('Error: ' + (data.error || 'Failed to delete opportunity'));
+                    showToast('Error: ' + (data.error || 'Failed to delete opportunity'), 'error');
                 }
             } catch (error) {
                 console.error('Error deleting opportunity:', error);
-                alert('Error deleting opportunity. Please try again.');
+                showToast('Error deleting opportunity. Please try again.', 'error');
             }
         }
         
@@ -640,14 +693,14 @@ $conn->close();
                 const data = await response.json();
                 
                 if (data.success) {
-                    alert('Proposal permanently deleted.');
+                    showToast('Proposal permanently deleted.', 'success');
                     loadArchivedRecords();
                 } else {
-                    alert('Error: ' + (data.error || 'Failed to delete proposal'));
+                    showToast('Error: ' + (data.error || 'Failed to delete proposal'), 'error');
                 }
             } catch (error) {
                 console.error('Error deleting proposal:', error);
-                alert('Error deleting proposal. Please try again.');
+                showToast('Error deleting proposal. Please try again.', 'error');
             }
         }
         
@@ -664,14 +717,14 @@ $conn->close();
                 const data = await response.json();
                 
                 if (data.success) {
-                    alert('Task restored successfully!');
+                    showToast('Task restored successfully!', 'success');
                     loadArchivedRecords();
                 } else {
-                    alert('Error: ' + (data.error || 'Failed to restore task'));
+                    showToast('Error: ' + (data.error || 'Failed to restore task'), 'error');
                 }
             } catch (error) {
                 console.error('Error restoring task:', error);
-                alert('Error restoring task. Please try again.');
+                showToast('Error restoring task. Please try again.', 'error');
             }
         }
         
@@ -689,14 +742,14 @@ $conn->close();
                 const data = await response.json();
                 
                 if (data.success) {
-                    alert('Task permanently deleted.');
+                    showToast('Task permanently deleted.', 'success');
                     loadArchivedRecords();
                 } else {
-                    alert('Error: ' + (data.error || 'Failed to delete task'));
+                    showToast('Error: ' + (data.error || 'Failed to delete task'), 'error');
                 }
             } catch (error) {
                 console.error('Error deleting task:', error);
-                alert('Error deleting task. Please try again.');
+                showToast('Error deleting task. Please try again.', 'error');
             }
         }
         

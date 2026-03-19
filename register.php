@@ -56,8 +56,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     .form-group{margin-bottom:15px;}
     label{display:block;font-weight:bold;margin-bottom:5px;color:#444;}
     input[type="text"],input[type="password"]{width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;box-sizing:border-box;}
+    .toggle-password{background:none;border:none;cursor:pointer;font-size:0.8rem;color:#764ba2;padding:0;margin-top:5px;display:inline-block;width:auto;}
+    .toggle-password:hover{text-decoration:underline;background:none;}
+    .strength-bar-container{height:4px;background:#e0e0e0;border-radius:2px;margin-top:6px;overflow:hidden;}
+    .strength-bar{height:100%;width:0;border-radius:2px;transition:width 0.3s,background 0.3s;}
+    .strength-text{font-size:0.8rem;margin-top:3px;color:#666;}
+    .match-indicator{font-size:0.8rem;margin-top:3px;}
+    .match-ok{color:#28a745;}
+    .match-no{color:#dc3545;}
     button{width:100%;background:#667eea;color:white;padding:10px;border:none;border-radius:6px;cursor:pointer;font-weight:bold;}
     button:hover{background:#5a67d8;}
+    button:disabled{opacity:0.7;cursor:not-allowed;}
     .message{margin-top:15px;text-align:center;color:red;}
     .error-msg {color: #d93025; font-size: 0.9em; margin-top: 5px;}
     .login-link{margin-top:15px;text-align:center;font-size:0.9em;}
@@ -81,19 +90,61 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         </div>
         <div class="form-group">
             <label for="password">Password</label>
-            <input type="password" id="password" name="password" required>
+            <input type="password" id="password" name="password" required oninput="updateStrength(); checkMatch();">
+            <button type="button" class="toggle-password" onclick="toggleVis('password', this)" aria-label="Show password">Show password</button>
+            <div class="strength-bar-container"><div class="strength-bar" id="strengthBar"></div></div>
+            <div class="strength-text" id="strengthText"></div>
             <?php if(!empty($password_err)): ?><div class="error-msg"><?= $password_err; ?></div><?php endif; ?>
         </div>
         <div class="form-group">
             <label for="confirm_password">Confirm Password</label>
-            <input type="password" id="confirm_password" name="confirm_password" required>
+            <input type="password" id="confirm_password" name="confirm_password" required oninput="checkMatch();">
+            <button type="button" class="toggle-password" onclick="toggleVis('confirm_password', this)" aria-label="Show password">Show password</button>
+            <div id="matchIndicator" class="match-indicator"></div>
             <?php if(!empty($confirm_password_err)): ?><div class="error-msg"><?= $confirm_password_err; ?></div><?php endif; ?>
         </div>
-        <button type="submit">Register</button>
+        <button type="submit" id="registerBtn">Register</button>
         <div class="login-link">
             Already have an account? <a href="login.php">Login here</a>
         </div>
     </form>
 </div>
+<script>
+function toggleVis(inputId, btn) {
+    const input = document.getElementById(inputId);
+    if (input.type === 'password') { input.type = 'text'; btn.textContent = 'Hide password'; }
+    else { input.type = 'password'; btn.textContent = 'Show password'; }
+}
+function updateStrength() {
+    const pw = document.getElementById('password').value;
+    const bar = document.getElementById('strengthBar');
+    const text = document.getElementById('strengthText');
+    let score = 0;
+    if (pw.length >= 6) score++;
+    if (pw.length >= 10) score++;
+    if (/[A-Z]/.test(pw)) score++;
+    if (/[0-9]/.test(pw)) score++;
+    if (/[^A-Za-z0-9]/.test(pw)) score++;
+    const pct = (score / 5) * 100;
+    const colors = ['#dc3545','#dc3545','#ffc107','#28a745','#28a745','#28a745'];
+    const labels = ['','Weak','Fair','Good','Strong','Very strong'];
+    bar.style.width = pct + '%';
+    bar.style.background = colors[score];
+    text.textContent = pw.length > 0 ? labels[score] : '';
+}
+function checkMatch() {
+    const pw = document.getElementById('password').value;
+    const cpw = document.getElementById('confirm_password').value;
+    const el = document.getElementById('matchIndicator');
+    if (cpw.length === 0) { el.textContent = ''; return; }
+    if (pw === cpw) { el.textContent = 'Passwords match'; el.className = 'match-indicator match-ok'; }
+    else { el.textContent = 'Passwords do not match'; el.className = 'match-indicator match-no'; }
+}
+document.querySelector('form').addEventListener('submit', function() {
+    const btn = document.getElementById('registerBtn');
+    btn.disabled = true;
+    btn.textContent = 'Creating account...';
+});
+</script>
 </body>
 </html>

@@ -84,11 +84,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     h2{text-align:center;margin-bottom:20px;color:#333;}
     .form-group{margin-bottom:15px;}
     label{display:block;font-weight:bold;margin-bottom:5px;color:#444;}
-    input[type="text"],input[type="password"]{width:100%;box-sizing: border-box;padding:10px;border:1px solid #ccc;border-radius:6px;}
+    input[type="text"],input[type="password"],input[type="text"].pw-visible{width:100%;box-sizing:border-box;padding:10px;border:1px solid #ccc;border-radius:6px;}
+    .toggle-password{background:none!important;border:none;cursor:pointer;font-size:0.8rem;color:#764ba2;padding:0;margin-top:5px;display:block;text-align:right;width:auto;-webkit-appearance:none;}
+    .toggle-password:hover{text-decoration:underline;background:none!important;}
     .remember{display:flex;align-items:center;margin-bottom:15px;}
     .remember input{margin-right:10px;}
-    button{width:100%;background:#667eea;color:white;padding:10px;border:none;border-radius:6px;cursor:pointer;font-weight:bold;}
-    button:hover{background:#5a67d8;}
+    button[type="submit"]{width:100%;background:#667eea;color:white;padding:10px;border:none;border-radius:6px;cursor:pointer;font-weight:bold;}
+    button[type="submit"]:hover{background:#5a67d8;}
     .message{margin-top:15px;text-align:center;padding:10px;border-radius:6px;}
     .message.error { color: #721c24; background-color: #f8d7da; border: 1px solid #f5c6cb; }
     .message.success { color: #155724; background-color: #d4edda; border: 1px solid #c3e6cb; }
@@ -114,8 +116,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="form-group">
             <label for="password">Password</label>
             <input type="password" id="password" name="password" autocomplete="current-password" required>
+            <button type="button" class="toggle-password" onclick="togglePasswordVisibility()" aria-label="Show password">Show password</button>
         </div>
-        <button type="submit">Login</button>
+        <button type="submit" id="loginBtn">Login</button>
         <div class="register-link">
             Don't have an account? <a href="register.php">Register here</a>
         </div>
@@ -127,5 +130,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php endif; ?>
     </form>
 </div>
+<script>
+function togglePasswordVisibility() {
+    const input = document.getElementById('password');
+    const btn = document.querySelector('.toggle-password');
+    if (input.type === 'password') {
+        input.type = 'text';
+        btn.textContent = 'Hide password';
+    } else {
+        input.type = 'password';
+        btn.textContent = 'Show password';
+    }
+}
+document.querySelector('form').addEventListener('submit', function() {
+    const btn = document.getElementById('loginBtn');
+    btn.disabled = true;
+    btn.textContent = 'Logging in...';
+    btn.style.opacity = '0.7';
+});
+</script>
 </body>
 </html>

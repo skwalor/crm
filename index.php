@@ -25,7 +25,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         .header-user-info { text-align: right; flex: 1; display: flex; justify-content: flex-end; align-items: center; gap: 10px; }
         .nav-tabs { display: flex; flex-wrap: wrap; gap: 5px; background: rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 5px; margin-bottom: 30px; }
         .nav-tab { flex: 1; min-width: 100px; background: transparent; border: none; padding: 12px 15px; border-radius: 8px; cursor: pointer; color: white; font-weight: 500; transition: all 0.3s ease; font-size: 1.05rem; line-height: 1.3; }
-        .nav-tab.active { background: rgba(255, 255, 255, 0.2); }
+        .nav-tab.active { background: rgba(255, 255, 255, 0.25); font-weight: 700; border-bottom: 3px solid white; }
         .nav-tab:hover { background: rgba(255, 255, 255, 0.15); }
         .tab-content { display: none; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-radius: 15px; padding: 30px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1); }
         .tab-content.active { display: block; animation: fadeIn 0.5s ease-in-out; }
@@ -34,7 +34,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         .form-group { display: flex; flex-direction: column; }
         .form-group label { font-weight: 600; margin-bottom: 8px; color: #444; }
         .form-group input, .form-group select, .form-group textarea { width: 100%; box-sizing: border-box; padding: 12px 15px; border: 2px solid #e1e5e9; border-radius: 8px; font-size: 14px; }
-        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: #667eea; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15); }
         .form-group textarea { resize: vertical; min-height: 100px; }
         .date-tbd-container { display: flex; align-items: center; gap: 15px; }
         .date-tbd-container input[type="date"] { flex: 1; }
@@ -53,7 +53,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         .data-table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; border-radius: 8px; overflow: hidden; }
         .data-table th, .data-table td { padding: 15px; text-align: left; border-bottom: 1px solid #e9ecef; }
         .data-table th { background: #f8f9fa; font-weight: 600; color: #444; }
-        .data-table tr:hover { background: #f8f9fa; }
+        .data-table tr:hover { background: #f0f4ff; }
         #companyContactsTable { table-layout: fixed; }
         #companyContactsTable td { word-wrap: break-word; overflow-wrap: break-word; vertical-align: middle; }
         .action-buttons { display: flex; gap: 5px; }
@@ -64,13 +64,19 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         .action-btn.view { background: #6c757d; }
         .action-btn.complete { background: #28a745; }
         .dashboard-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
-        .dashboard-card { background: linear-gradient(45deg, #667eea, #764ba2); color: white; padding: 25px; border-radius: 15px; text-align: center; }
-        .dashboard-card h3 { font-size: 2.5em; margin-bottom: 5px; }
-        .dashboard-card p { opacity: 0.9; }
+        .dashboard-card { background: white; color: #333; padding: 25px; border-radius: 15px; text-align: center; border-left: 5px solid #667eea; box-shadow: 0 2px 8px rgba(0,0,0,0.08); transition: transform 0.2s, box-shadow 0.2s; }
+        .dashboard-card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.12); }
+        .dashboard-card:nth-child(2) { border-left-color: #764ba2; }
+        .dashboard-card:nth-child(3) { border-left-color: #28a745; }
+        .dashboard-card:nth-child(4) { border-left-color: #ffc107; }
+        .dashboard-card:nth-child(5) { border-left-color: #17a2b8; }
+        .dashboard-card h3 { font-size: 2.5em; margin-bottom: 5px; background: linear-gradient(45deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .dashboard-card p { color: #6c757d; }
         .search-bar { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; align-items: center; }
-        .search-bar input { flex: 1; min-width: 200px; padding: 12px 15px; border: 2px solid #e1e5e9; border-radius: 8px; }
+        .search-bar input { flex: 1; min-width: 200px; padding: 12px 15px; border: 2px solid #e1e5e9; border-radius: 8px; transition: border-color 0.2s, box-shadow 0.2s; }
+        .search-bar input:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15); }
         .search-bar select { padding: 12px 15px; border: 2px solid #e1e5e9; border-radius: 8px; background: white; min-width: 180px; }
-        .modal { display: none; position: fixed; z-index: 1100; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
+        .modal { display: none; position: fixed; z-index: 1100; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); backdrop-filter: blur(4px); }
         .modal-content { background-color: #fefefe; margin: 5% auto; padding: 30px; border-radius: 15px; width: 90%; max-width: 700px; max-height: 85vh; overflow-y: auto; }
         .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
         .close:hover { color: #333; }
@@ -92,6 +98,25 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         .priority-medium { border-left: 4px solid #ffc107; }
         .priority-low { border-left: 4px solid #28a745; }
         [data-hidden] { display: none !important; }
+        /* Loading Spinner Overlay */
+        .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.85); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .loading-spinner { width: 48px; height: 48px; border: 4px solid #e1e5e9; border-top-color: #667eea; border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-overlay p { margin-top: 16px; color: #555; font-weight: 500; font-size: 1rem; }
+        /* Toast Notifications */
+        .toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 10000; display: flex; flex-direction: column-reverse; gap: 10px; }
+        .toast { padding: 14px 22px; border-radius: 10px; color: #fff; font-weight: 500; font-size: 0.92rem; box-shadow: 0 4px 16px rgba(0,0,0,0.18); animation: toastIn 0.3s ease; max-width: 400px; display: flex; align-items: center; gap: 10px; }
+        .toast.success { background: #28a745; }
+        .toast.error { background: #dc3545; }
+        .toast.info { background: #667eea; }
+        .toast.warning { background: #ffc107; color: #333; }
+        .toast.fade-out { animation: toastOut 0.3s ease forwards; }
+        @keyframes toastIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes toastOut { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(20px); } }
+        /* Empty State */
+        .empty-state-msg { text-align: center; padding: 40px 20px; color: #6c757d; }
+        .empty-state-msg p { font-size: 1.05rem; margin-bottom: 5px; }
+        .empty-state-msg small { font-size: 0.85rem; opacity: 0.7; }
         .section-card { background: #fff; border-radius: 12px; padding: 20px; margin-bottom: 25px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border: 1px solid #e9ecef; }
         .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #e9ecef; }
         .section-title { font-size: 1.1rem; font-weight: 600; color: #333; display: flex; align-items: center; gap: 10px; }
@@ -1248,7 +1273,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                     <p style="margin: 0; color: #6c757d;">Manage federal agencies and their divisions.</p>
                 </div>
                 <div class="search-bar">
-                    <input type="text" placeholder="Search agencies or divisions..." id="agencySearch" oninput="filterAgenciesView()">
+                    <input type="text" placeholder="Search agencies or divisions..." id="agencySearch" oninput="debouncedFilterAgencies()">
                     <button class="btn" data-permission="agency.create" onclick="openModal('agencyModal')">Add Agency</button>
                 </div>
                 <div id="agenciesHierarchyView" class="agencies-hierarchy"></div>
@@ -1261,7 +1286,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                     <p style="margin: 0; color: #6c757d;">Manage partner, competitor, and vendor companies in the federal market.</p>
                 </div>
                 <div class="search-bar">
-                    <input type="text" placeholder="Search companies..." id="companySearch" oninput="filterCompanies()">
+                    <input type="text" placeholder="Search companies..." id="companySearch" oninput="debouncedFilterCompanies()">
                     <select id="companyTypeFilter" onchange="filterCompanies()">
                         <option value="ALL">All Types</option>
                         <option value="Prime Contractor">Prime Contractor</option>
@@ -1302,7 +1327,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                     <p style="margin: 0; color: #6c757d;">Track contacts at partner and competitor companies. Click on a contact name to view details.</p>
                 </div>
                 <div class="search-bar">
-                    <input type="text" placeholder="Search contacts..." id="companyContactSearch" oninput="filterCompanyContacts()">
+                    <input type="text" placeholder="Search contacts..." id="companyContactSearch" oninput="debouncedFilterCompanyContacts()">
                     <select id="companyContactCompanyFilter" onchange="filterCompanyContacts()">
                         <option value="ALL">All Companies</option>
                     </select>
@@ -1403,7 +1428,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 <button class="btn" data-permission="event.create" onclick="editEvent()">+ New Event</button>
             </div>
             <div class="filter-bar">
-                <input type="text" id="eventSearch" placeholder="Search events..." onkeyup="filterEventsTable()">
+                <input type="text" id="eventSearch" placeholder="Search events..." oninput="debouncedFilterEvents()">
                 <select id="eventStatusFilter" onchange="filterEventsTable()">
                     <option value="">All Statuses</option>
                     <option value="Planning">Planning</option>
@@ -3023,7 +3048,43 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         </div>
     </div>
 
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <p>Loading CRM data...</p>
+    </div>
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
     <script>
+    // Toast notification system
+    function showToast(message, type = 'info', duration = 3500) {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.textContent = message;
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.classList.add('fade-out');
+            setTimeout(() => toast.remove(), 300);
+        }, duration);
+    }
+
+    // Debounce utility
+    function debounce(fn, delay = 300) {
+        let timer;
+        return function(...args) {
+            clearTimeout(timer);
+            timer = setTimeout(() => fn.apply(this, args), delay);
+        };
+    }
+
+    // Debounced search handlers for main table filters
+    const debouncedFilterAgencies = debounce(() => filterAgenciesView(), 300);
+    const debouncedFilterCompanies = debounce(() => filterCompanies(), 300);
+    const debouncedFilterCompanyContacts = debounce(() => filterCompanyContacts(), 300);
+    const debouncedFilterEvents = debounce(() => filterEventsTable(), 300);
+
     // Global state
     let agencies = [], contacts = [], opportunities = [], proposals = [], tasks = [], events = [];
     let companies = [], companyContacts = [], companySmallBusinessStatuses = {}, companyVehicles = {}, companyContactAgencies = {}, companyCoreCustomers = {};
@@ -3091,10 +3152,11 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
 
     // Fetch all data from API
     async function fetchAllData() {
+        const overlay = document.getElementById('loadingOverlay');
         try {
             const response = await fetch(`${API_URL}?action=getAllData`);
             if (!response.ok) throw new Error(`API request failed: ${response.status}`);
-            
+
             const data = await response.json();
             
             userPermissions = data.permissions || {};
@@ -3150,9 +3212,11 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             populateKanbanUserFilter();
             renderKanbanBoard();
 
+            if (overlay) overlay.style.display = 'none';
         } catch (error) {
             console.error('Error fetching data:', error);
-            alert('Could not load application data. Please check the console for details.');
+            if (overlay) overlay.style.display = 'none';
+            showToast('Could not load application data. Please check the console for details.', 'error', 5000);
         }
     }
 
@@ -3438,7 +3502,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             `;
         });
         
-        container.innerHTML = html || '<div class="empty-state">No agencies found.</div>';
+        container.innerHTML = html || '<div class="empty-state-msg"><p>No agencies found</p><small>Add an agency using the button above, or adjust your search.</small></div>';
     }
     
     function filterAgenciesView() {
@@ -3472,7 +3536,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         const name = input?.value.trim();
         
         if (!name) {
-            alert('Please enter a division name.');
+            showToast('Please enter a division name.', 'warning');
             return;
         }
         
@@ -3493,7 +3557,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             input.value = '';
             await fetchAllData();
         } catch (error) {
-            alert('Error: ' + error.message);
+            showToast('Error: ' + error.message, 'error');
         }
     }
     
@@ -3515,7 +3579,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             
             await fetchAllData();
         } catch (error) {
-            alert('Error: ' + error.message);
+            showToast('Error: ' + error.message, 'error');
         }
     }
 
@@ -3594,7 +3658,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             `;
         });
         
-        container.innerHTML = html || '<div class="empty-state">No contacts found.</div>';
+        container.innerHTML = html || '<div class="empty-state-msg"><p>No contacts found</p><small>Add a contact using the button above, or adjust your filters.</small></div>';
     }
 
     function populateOpportunitiesTable() {
@@ -3638,7 +3702,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             
             // For converted opportunities, show view-only actions
             const actionButtons = isConverted
-                ? `<button class="action-btn" style="background: #6c757d;" onclick="alert('This opportunity has been converted to a proposal.')" title="Converted">🔒</button>${archiveBtn}`
+                ? `<button class="action-btn" style="background: #6c757d;" onclick="showToast('This opportunity has been converted to a proposal.', 'info')" title="Converted">🔒</button>${archiveBtn}`
                 : `<button class="action-btn" style="background: #17a2b8;" onclick="openOpportunityNotes(${item.id})" title="View Notes">📝</button>
                    ${getActionsHtml('opportunity', item.id, true)}${archiveBtn}`;
             
@@ -3660,7 +3724,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                     </td>
                 </tr>
             `;
-        }).join('') || '<tr><td colspan="10" class="empty-state">No opportunities found.</td></tr>';
+        }).join('') || '<tr><td colspan="10" class="empty-state-msg"><p>No opportunities found</p><small>Create one with the Add Opportunity button, or change the status filter.</small></td></tr>';
     }
 
     function populateProposalsTable() {
@@ -4076,7 +4140,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             // Reload My Tasks page to reflect the change
             await loadMyTasks();
         } catch (error) {
-            alert('Error completing task: ' + error.message);
+            showToast('Error completing task: ' + error.message, 'error');
         }
     }
 
@@ -4173,6 +4237,19 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         }
     }
     
+    // Close topmost open modal on Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            const openModals = document.querySelectorAll('.modal');
+            for (let i = openModals.length - 1; i >= 0; i--) {
+                if (openModals[i].style.display === 'block') {
+                    closeModal(openModals[i].id);
+                    return;
+                }
+            }
+        }
+    });
+
     // Toggle TBD for opportunity due date
     function toggleOpportunityTBD() {
         const tbdCheckbox = document.getElementById('opportunityDueDateTBD');
@@ -4249,7 +4326,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             
             // If status is "Converted", show read-only message
             if (item.status === 'Converted') {
-                alert('This opportunity has been converted to a proposal and cannot be edited.');
+                showToast('This opportunity has been converted to a proposal and cannot be edited.', 'info');
                 return; // Don't open the modal
             }
             
@@ -4328,14 +4405,14 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             const data = await response.json();
             
             if (data.success) {
-                alert('Opportunity archived successfully. You can restore it from the Admin Panel.');
+                showToast('Opportunity archived successfully.', 'success');
                 await fetchAllData();
             } else {
-                alert('Error: ' + (data.error || 'Failed to archive opportunity'));
+                showToast('Error: ' + (data.error || 'Failed to archive opportunity', 'error'));
             }
         } catch (error) {
             console.error('Error archiving opportunity:', error);
-            alert('Error archiving opportunity. Please try again.');
+            showToast('Error archiving opportunity. Please try again.', 'error');
         }
     }
 
@@ -4352,14 +4429,14 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             const data = await response.json();
             
             if (data.success) {
-                alert('Proposal archived successfully. You can restore it from the Admin Panel.');
+                showToast('Proposal archived successfully.', 'success');
                 await fetchAllData();
             } else {
-                alert('Error: ' + (data.error || 'Failed to archive proposal'));
+                showToast('Error: ' + (data.error || 'Failed to archive proposal', 'error'));
             }
         } catch (error) {
             console.error('Error archiving proposal:', error);
-            alert('Error archiving proposal. Please try again.');
+            showToast('Error archiving proposal. Please try again.', 'error');
         }
     }
 
@@ -4376,14 +4453,14 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             const data = await response.json();
             
             if (data.success) {
-                alert('Task archived successfully.');
+                showToast('Task archived successfully.', 'success');
                 await fetchAllData();
             } else {
-                alert('Error: ' + (data.error || 'Failed to archive task'));
+                showToast('Error: ' + (data.error || 'Failed to archive task', 'error'));
             }
         } catch (error) {
             console.error('Error archiving task:', error);
-            alert('Error archiving task. Please try again.');
+            showToast('Error archiving task. Please try again.', 'error');
         }
     }
 
@@ -4401,12 +4478,16 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             if (!response.ok) throw new Error('Delete failed');
             await fetchAllData();
         } catch (error) {
-            alert(`Error deleting ${type}: ${error.message}`);
+            showToast(`Error deleting ${type}: ${error.message}`, 'error');
         }
     }
 
     // Save functions for each type
     async function saveData(type, data) {
+        const modal = document.getElementById(`${type}Modal`);
+        const submitBtn = modal?.querySelector('button[type="submit"], .btn');
+        const originalText = submitBtn?.textContent;
+        if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Saving...'; submitBtn.style.opacity = '0.7'; }
         try {
             const response = await fetch(`${API_URL}?action=save${type.charAt(0).toUpperCase() + type.slice(1)}`, {
                 method: 'POST',
@@ -4420,7 +4501,9 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             await fetchAllData();
             closeModal(`${type}Modal`);
         } catch (error) {
-            alert(`Error saving ${type}: ${error.message}`);
+            showToast(`Error saving ${type}: ${error.message}`, 'error');
+        } finally {
+            if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = originalText; submitBtn.style.opacity = ''; }
         }
     }
 
@@ -4473,7 +4556,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         if (newStatus === 'Bid' && opportunityId && originalOpportunityStatus !== 'Bid') {
             // Check permissions first
             if (!userPermissions.opportunity?.can_update || !userPermissions.proposal?.can_create) {
-                alert('You need both Opportunity edit and Proposal create permissions to convert an opportunity to a proposal.');
+                showToast('You need both Opportunity edit and Proposal create permissions to convert.', 'warning');
                 document.getElementById('opportunityStatus').value = originalOpportunityStatus || 'Lead';
                 return;
             }
@@ -4491,7 +4574,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
     function showConvertToProposalModal(opportunityId) {
         const opportunity = opportunities.find(o => o.id == opportunityId);
         if (!opportunity) {
-            alert('Opportunity not found');
+            showToast('Opportunity not found.', 'warning');
             return;
         }
         
@@ -4548,7 +4631,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             const result = await response.json();
             
             if (result.success) {
-                alert('Opportunity successfully converted to Proposal!');
+                showToast('Opportunity successfully converted to Proposal!', 'success');
                 document.getElementById('convertToProposalModal').style.display = 'none';
                 pendingConversionOpportunityId = null;
                 
@@ -4561,11 +4644,11 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                     showTab('proposals', proposalsTab);
                 }
             } else {
-                alert('Error: ' + (result.error || 'Failed to convert opportunity'));
+                showToast('Error: ' + (result.error || 'Failed to convert opportunity', 'error'));
             }
         } catch (error) {
             console.error('Error converting opportunity:', error);
-            alert('Error converting opportunity. Please try again.');
+            showToast('Error converting opportunity. Please try again.', 'error');
         }
     }
 
@@ -4580,7 +4663,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         
         // If status is "Bid" on a NEW opportunity, warn user
         if (status === 'Bid' && !effectiveId) {
-            alert('You cannot set status to "Bid" when creating a new opportunity. Please save it first, then change status to "Bid" to convert it to a Proposal.');
+            showToast('Please save the opportunity first, then change status to Bid to convert it to a Proposal.', 'warning');
             return;
         }
         
@@ -4592,14 +4675,14 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         
         // Don't allow editing converted opportunities
         if (status === 'Converted') {
-            alert('Converted opportunities cannot be edited.');
+            showToast('Converted opportunities cannot be edited.', 'info');
             return;
         }
         
         const isTBD = document.getElementById('opportunityDueDateTBD').checked;
         // Validate: if not TBD, due date is required
         if (!isTBD && !document.getElementById('opportunityDueDate').value) {
-            alert('Please enter a Due Date or check TBD.');
+            showToast('Please enter a Due Date or check TBD.', 'warning');
             return;
         }
         
@@ -6076,12 +6159,12 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                     }, 500);
                 }
             } else {
-                alert('Failed to update task status');
+                showToast('Failed to update task status', 'error');
                 renderKanbanBoard();
             }
         } catch (error) {
             console.error('Error updating task:', error);
-            alert('Error updating task status');
+            showToast('Error updating task status', 'error');
             renderKanbanBoard();
         }
         
@@ -6397,7 +6480,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         };
         
         if (!noteData.note_text.trim()) {
-            alert('Please enter a note.');
+            showToast('Please enter a note.', 'warning');
             return;
         }
         
@@ -6414,11 +6497,11 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 closeNoteModal();
                 loadContactNotes();
             } else {
-                alert('Error saving note: ' + (result.error || 'Unknown error'));
+                showToast('Error saving note: ' + (result.error || 'Unknown error', 'error'));
             }
         } catch (error) {
             console.error('Error saving note:', error);
-            alert('Error saving note');
+            showToast('Error saving note', 'error');
         }
     }
     
@@ -6435,11 +6518,11 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             if (result.success) {
                 loadContactNotes();
             } else {
-                alert('Error deleting note: ' + (result.error || 'Unknown error'));
+                showToast('Error deleting note: ' + (result.error || 'Unknown error', 'error'));
             }
         } catch (error) {
             console.error('Error deleting note:', error);
-            alert('Error deleting note');
+            showToast('Error deleting note', 'error');
         }
     }
     
@@ -6573,7 +6656,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 data = JSON.parse(text);
             } catch (parseError) {
                 console.error('JSON parse error:', parseError, 'Response:', text);
-                alert('Error: Invalid response from server. Check console for details.');
+                showToast('Error: Invalid response from server. Check console for details.', 'error');
                 closeOpportunityWorkspace();
                 return;
             }
@@ -6582,12 +6665,12 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 workspaceData = data;
                 renderWorkspace();
             } else {
-                alert('Error loading opportunity: ' + (data.error || 'Unknown error'));
+                showToast('Error loading opportunity: ' + (data.error || 'Unknown error', 'error'));
                 closeOpportunityWorkspace();
             }
         } catch (error) {
             console.error('Error loading workspace:', error);
-            alert('Error loading opportunity workspace: ' + error.message);
+            showToast('Error loading opportunity workspace: ' + error.message, 'error');
             closeOpportunityWorkspace();
         }
     }
@@ -6665,7 +6748,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
     function switchWorkspacePhase(phase) {
         const tab = document.querySelector(`.opp-phase-tab[data-phase="${phase}"]`);
         if (tab && tab.classList.contains('locked')) {
-            alert('This phase is locked. Complete the previous phase first.');
+            showToast('This phase is locked. Complete the previous phase first.', 'warning');
             return;
         }
         
@@ -6810,25 +6893,25 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         const customerPainPoints = document.getElementById('qualCustomerPainPoints').value.trim();
         
         if (!naicsCode) {
-            alert('Please enter NAICS Code (required field).');
+            showToast('Please enter NAICS Code (required field).', 'warning');
             document.getElementById('qualNaicsCode').focus();
             return;
         }
         
         if (!setAsideType) {
-            alert('Please select Set-Aside Type (required field).');
+            showToast('Please select Set-Aside Type (required field).', 'warning');
             document.getElementById('qualSetAsideType').focus();
             return;
         }
         
         if (!contractType) {
-            alert('Please select Contract Type (required field).');
+            showToast('Please select Contract Type (required field).', 'warning');
             document.getElementById('qualContractType').focus();
             return;
         }
         
         if (!customerPainPoints) {
-            alert('Please enter Customer Pain Points (required field).');
+            showToast('Please enter Customer Pain Points (required field).', 'warning');
             document.getElementById('qualCustomerPainPoints').focus();
             return;
         }
@@ -6879,18 +6962,18 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             if (result.success) {
                 // Refresh workspace to show updated phase
                 if (qualificationDecision === 'pursue') {
-                    alert('Qualification saved! Moving to Capture phase.');
+                    showToast('Qualification saved! Moving to Capture phase.', 'success');
                     await openOpportunityWorkspace(currentWorkspaceOppId);
                 } else {
-                    alert('Qualification data saved!');
+                    showToast('Qualification data saved!', 'success');
                     calculateWorkspaceProgress();
                 }
             } else {
-                alert('Error saving: ' + (result.error || 'Unknown error'));
+                showToast('Error saving: ' + (result.error || 'Unknown error', 'error'));
             }
         } catch (error) {
             console.error('Error saving qualification:', error);
-            alert('Error saving qualification data');
+            showToast('Error saving qualification data', 'error');
         }
     }
     
@@ -7126,7 +7209,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         const pwin = parseInt(document.getElementById('competitorPwin').value) || 0;
         
         if (!competitorName) {
-            alert('Please enter or select a competitor name.');
+            showToast('Please enter or select a competitor name.', 'warning');
             return;
         }
         
@@ -7152,11 +7235,11 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 renderCompetitors();
                 document.getElementById('competitorModal').style.display = 'none';
             } else {
-                alert('Error saving competitor: ' + (result.error || 'Unknown error'));
+                showToast('Error saving competitor: ' + (result.error || 'Unknown error', 'error'));
             }
         } catch (error) {
             console.error('Error saving competitor:', error);
-            alert('Error saving competitor');
+            showToast('Error saving competitor', 'error');
         }
     }
     
@@ -7190,7 +7273,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                     workspaceData.competitors.push({ ...data, id: result.id });
                 }
             } else {
-                alert('Error saving competitor');
+                showToast('Error saving competitor', 'error');
             }
         } catch (error) {
             console.error('Error saving competitor:', error);
@@ -7367,12 +7450,12 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         const status = document.getElementById('teamingPartnerStatus').value;
 
         if (!companyName) {
-            alert('Please select or enter a company name.');
+            showToast('Please select or enter a company name.', 'warning');
             return;
         }
 
         if (!capability) {
-            alert('Please enter the partner\'s capability/contribution.');
+            showToast('Please enter the partner\'s capability/contribution.', 'warning');
             return;
         }
 
@@ -7406,7 +7489,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 result = JSON.parse(text);
             } catch (parseErr) {
                 console.error('Server returned non-JSON:', text);
-                alert('Server error saving partner. Check console for details.');
+                showToast('Server error saving partner. Check console for details.', 'error');
                 return false;
             }
 
@@ -7419,12 +7502,12 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 renderTeamingPartners();
                 return true;
             } else {
-                alert('Error saving partner: ' + (result.error || 'Unknown error'));
+                showToast('Error saving partner: ' + (result.error || 'Unknown error', 'error'));
                 console.error('saveTeamingPartner error:', result);
                 return false;
             }
         } catch (error) {
-            alert('Error saving partner: ' + error.message);
+            showToast('Error saving partner: ' + error.message, 'error');
             console.error('Error saving partner:', error);
             return false;
         }
@@ -7598,7 +7681,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             renderWorkspacePhaseTasks('bid_decision');
             await fetchAllData();
         } catch (error) {
-            alert('Error deleting task: ' + error.message);
+            showToast('Error deleting task: ' + error.message, 'error');
         }
     }
 
@@ -7650,17 +7733,17 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             const result = await response.json();
             
             if (result.success) {
-                alert('Capture data saved!');
+                showToast('Capture data saved!', 'success');
                 if (captureDecision === 'yes') {
                     await openOpportunityWorkspace(currentWorkspaceOppId);
                 }
                 calculateWorkspaceProgress();
             } else {
-                alert('Error saving: ' + (result.error || 'Unknown error'));
+                showToast('Error saving: ' + (result.error || 'Unknown error', 'error'));
             }
         } catch (error) {
             console.error('Error saving capture:', error);
-            alert('Error saving capture data');
+            showToast('Error saving capture data', 'error');
         }
     }
     
@@ -7919,12 +8002,12 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         const status = document.getElementById('riskStatus').value;
         
         if (!description) {
-            alert('Please enter a risk description.');
+            showToast('Please enter a risk description.', 'warning');
             return;
         }
         
         if (!mitigation) {
-            alert('Please enter a mitigation strategy.');
+            showToast('Please enter a mitigation strategy.', 'warning');
             return;
         }
         
@@ -8022,20 +8105,20 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 if (finalDecision === 'go') {
                     await doConvertToProposal();
                 } else if (finalDecision === 'no_go') {
-                    alert('Bid decision saved. Opportunity marked as No-Bid.');
+                    showToast('Bid decision saved. Opportunity marked as No-Bid.', 'success');
                     await fetchAllData();
                     closeOpportunityWorkspace();
                 } else {
-                    alert('Bid decision saved!');
+                    showToast('Bid decision saved!', 'success');
                     await fetchAllData();
                     await openOpportunityWorkspace(currentWorkspaceOppId);
                 }
             } else {
-                alert('Error saving: ' + (result.error || 'Unknown error'));
+                showToast('Error saving: ' + (result.error || 'Unknown error', 'error'));
             }
         } catch (error) {
             console.error('Error saving bid decision:', error);
-            alert('Error saving bid decision');
+            showToast('Error saving bid decision', 'error');
         }
     }
     
@@ -8055,15 +8138,15 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             const result = await response.json();
             
             if (result.success) {
-                alert('Bid Decision: GO! Proposal created successfully.');
+                showToast('Bid Decision: GO! Proposal created successfully.', 'success');
                 await fetchAllData();
                 closeOpportunityWorkspace();
             } else {
-                alert('Bid decision saved, but error creating proposal: ' + (result.error || 'Failed to convert'));
+                showToast('Bid decision saved, but error creating proposal: ' + (result.error || 'Failed to convert'), 'warning');
             }
         } catch (error) {
             console.error('Error converting to proposal:', error);
-            alert('Bid decision saved, but error converting to proposal');
+            showToast('Bid decision saved, but error converting to proposal.', 'warning');
         }
     }
     
@@ -8086,15 +8169,15 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             const result = await response.json();
             
             if (result.success) {
-                alert('Proposal created successfully!');
+                showToast('Proposal created successfully!', 'success');
                 await fetchAllData();
                 closeOpportunityWorkspace();
             } else {
-                alert('Error: ' + (result.error || 'Failed to convert'));
+                showToast('Error: ' + (result.error || 'Failed to convert', 'error'));
             }
         } catch (error) {
             console.error('Error converting to proposal:', error);
-            alert('Error converting to proposal');
+            showToast('Error converting to proposal', 'error');
         }
     }
     
@@ -8240,14 +8323,14 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         const role = document.getElementById('qualContactRole').value;
         
         if (!contactId) {
-            alert('Please select a contact.');
+            showToast('Please select a contact.', 'warning');
             return;
         }
         
         // Check if already assigned
         const assignedIds = (workspaceData.qualification_contacts || []).map(qc => qc.contact_id);
         if (assignedIds.includes(parseInt(contactId))) {
-            alert('This contact is already assigned.');
+            showToast('This contact is already assigned.', 'info');
             return;
         }
         
@@ -8287,11 +8370,11 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                     renderQualificationContacts();
                 }
             } else {
-                alert('Error adding contact: ' + (result.error || 'Unknown error'));
+                showToast('Error adding contact: ' + (result.error || 'Unknown error', 'error'));
             }
         } catch (error) {
             console.error('Error saving contact:', error);
-            alert('Error adding contact');
+            showToast('Error adding contact', 'error');
         }
     }
     
@@ -8654,7 +8737,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         };
         
         if (!noteData.note_text.trim()) {
-            alert('Please enter a note.');
+            showToast('Please enter a note.', 'warning');
             return;
         }
         
@@ -8671,11 +8754,11 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 closeOppNoteModal();
                 loadOpportunityNotes();
             } else {
-                alert('Error saving note: ' + (result.error || 'Unknown error'));
+                showToast('Error saving note: ' + (result.error || 'Unknown error', 'error'));
             }
         } catch (error) {
             console.error('Error saving note:', error);
-            alert('Error saving note');
+            showToast('Error saving note', 'error');
         }
     }
     
@@ -8692,11 +8775,11 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             if (result.success) {
                 loadOpportunityNotes();
             } else {
-                alert('Error deleting note: ' + (result.error || 'Unknown error'));
+                showToast('Error deleting note: ' + (result.error || 'Unknown error', 'error'));
             }
         } catch (error) {
             console.error('Error deleting note:', error);
-            alert('Error deleting note');
+            showToast('Error deleting note', 'error');
         }
     }
     
@@ -8918,14 +9001,14 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
     async function addAssignedUser() {
         const userId = document.getElementById('assignUserSelectedId').value;
         if (!userId) {
-            alert('Please select a user to add.');
+            showToast('Please select a user to add.', 'warning');
             return;
         }
         
         // Check if already assigned
         const assignedUsers = currentOpportunityData?.assignedUsers || [];
         if (assignedUsers.some(u => u.user_id == userId)) {
-            alert('This user is already assigned to the opportunity.');
+            showToast('This user is already assigned to the opportunity.', 'info');
             return;
         }
         
@@ -8948,11 +9031,11 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 // Refresh the modal
                 openAssignUsersModal();
             } else {
-                alert('Error adding user: ' + (result.error || 'Unknown error'));
+                showToast('Error adding user: ' + (result.error || 'Unknown error', 'error'));
             }
         } catch (error) {
             console.error('Error adding user:', error);
-            alert('Error adding user');
+            showToast('Error adding user', 'error');
         }
     }
     
@@ -8979,11 +9062,11 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 // Refresh the modal
                 openAssignUsersModal();
             } else {
-                alert('Error removing user: ' + (result.error || 'Unknown error'));
+                showToast('Error removing user: ' + (result.error || 'Unknown error', 'error'));
             }
         } catch (error) {
             console.error('Error removing user:', error);
-            alert('Error removing user');
+            showToast('Error removing user', 'error');
         }
     }
     
@@ -8992,14 +9075,14 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         const contactType = document.getElementById('assignContactSelectedType').value || 'federal';
         
         if (!contactId) {
-            alert('Please select a contact to add.');
+            showToast('Please select a contact to add.', 'warning');
             return;
         }
         
         // Check if already assigned (check by id AND type to avoid confusion)
         const assignedContacts = currentOpportunityData?.assignedContacts || [];
         if (assignedContacts.some(c => c.contact_id == contactId && (c.contact_type || 'federal') === contactType)) {
-            alert('This contact is already assigned to the opportunity.');
+            showToast('This contact is already assigned to the opportunity.', 'info');
             return;
         }
         
@@ -9026,11 +9109,11 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 // Refresh the modal
                 openAssignContactsModal();
             } else {
-                alert('Error adding contact: ' + (result.error || 'Unknown error'));
+                showToast('Error adding contact: ' + (result.error || 'Unknown error', 'error'));
             }
         } catch (error) {
             console.error('Error adding contact:', error);
-            alert('Error adding contact');
+            showToast('Error adding contact', 'error');
         }
     }
     
@@ -9060,11 +9143,11 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 // Refresh the modal
                 openAssignContactsModal();
             } else {
-                alert('Error removing contact: ' + (result.error || 'Unknown error'));
+                showToast('Error removing contact: ' + (result.error || 'Unknown error', 'error'));
             }
         } catch (error) {
             console.error('Error removing contact:', error);
-            alert('Error removing contact');
+            showToast('Error removing contact', 'error');
         }
     }
     
@@ -9095,11 +9178,11 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 document.getElementById('assignModal').style.display = 'none';
                 await loadOpportunityDetails(currentOpportunityId);
             } else {
-                alert('Error saving assignments: ' + (result.error || 'Unknown error'));
+                showToast('Error saving assignments: ' + (result.error || 'Unknown error', 'error'));
             }
         } catch (error) {
             console.error('Error saving assignments:', error);
-            alert('Error saving assignments');
+            showToast('Error saving assignments', 'error');
         }
     }
     
@@ -9122,11 +9205,11 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 document.getElementById('assignModal').style.display = 'none';
                 await loadOpportunityDetails(currentOpportunityId);
             } else {
-                alert('Error saving assignments: ' + (result.error || 'Unknown error'));
+                showToast('Error saving assignments: ' + (result.error || 'Unknown error', 'error'));
             }
         } catch (error) {
             console.error('Error saving assignments:', error);
-            alert('Error saving assignments');
+            showToast('Error saving assignments', 'error');
         }
     }
     
@@ -9453,11 +9536,11 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 closePropNoteModal();
                 loadProposalNotes();
             } else {
-                alert('Error saving note: ' + (result.error || 'Unknown error'));
+                showToast('Error saving note: ' + (result.error || 'Unknown error', 'error'));
             }
         } catch (error) {
             console.error('Error saving note:', error);
-            alert('Error saving note');
+            showToast('Error saving note', 'error');
         }
     }
     
@@ -9474,11 +9557,11 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             if (result.success) {
                 loadProposalNotes();
             } else {
-                alert('Error deleting note: ' + (result.error || 'Unknown error'));
+                showToast('Error deleting note: ' + (result.error || 'Unknown error', 'error'));
             }
         } catch (error) {
             console.error('Error deleting note:', error);
-            alert('Error deleting note');
+            showToast('Error deleting note', 'error');
         }
     }
     
@@ -9559,11 +9642,11 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 closeAssignPropUsersModal();
                 await loadProposalDetails(currentProposalId);
             } else {
-                alert('Error saving assignments: ' + (result.error || 'Unknown error'));
+                showToast('Error saving assignments: ' + (result.error || 'Unknown error', 'error'));
             }
         } catch (error) {
             console.error('Error saving assignments:', error);
-            alert('Error saving assignments');
+            showToast('Error saving assignments', 'error');
         }
     }
     
@@ -9586,11 +9669,11 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 closeAssignPropContactsModal();
                 await loadProposalDetails(currentProposalId);
             } else {
-                alert('Error saving assignments: ' + (result.error || 'Unknown error'));
+                showToast('Error saving assignments: ' + (result.error || 'Unknown error', 'error'));
             }
         } catch (error) {
             console.error('Error saving assignments:', error);
-            alert('Error saving assignments');
+            showToast('Error saving assignments', 'error');
         }
     }
 
@@ -9857,7 +9940,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             populateEventsTable();
         } catch (error) {
             console.error('Error unlinking task:', error);
-            alert('Error unlinking task');
+            showToast('Error unlinking task', 'error');
         }
     }
     
@@ -10272,7 +10355,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         const noteText = document.getElementById('eventNoteInModalText').value;
         
         if (!noteText.trim()) {
-            alert('Please enter a note.');
+            showToast('Please enter a note.', 'warning');
             return;
         }
         
@@ -10296,11 +10379,11 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                     closeModal('addEventNoteInModalDialog');
                     loadEventNotesForModal(eventId);
                 } else {
-                    alert('Error saving note: ' + (result.error || 'Unknown error'));
+                    showToast('Error saving note: ' + (result.error || 'Unknown error', 'error'));
                 }
             } catch (error) {
                 console.error('Error saving note:', error);
-                alert('Error saving note');
+                showToast('Error saving note', 'error');
             }
         } else {
             // New event - add to pending list
@@ -10334,11 +10417,11 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                     const eventId = document.getElementById('eventId').value;
                     loadEventNotesForModal(eventId);
                 } else {
-                    alert('Error deleting note');
+                    showToast('Error deleting note', 'error');
                 }
             } catch (error) {
                 console.error('Error deleting note:', error);
-                alert('Error deleting note');
+                showToast('Error deleting note', 'error');
             }
         }
     }
@@ -10885,7 +10968,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 populateEventsTable();
             } catch (error) {
                 console.error('Error creating task:', error);
-                alert('Error creating task');
+                showToast('Error creating task', 'error');
             }
         } else {
             // Add to pending list (for event modal)
@@ -10910,7 +10993,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
     async function openEventPeopleModal() {
         const eventId = document.getElementById('eventId').value;
         if (!eventId) {
-            alert('Please save the event first before managing people.');
+            showToast('Please save the event first before managing people.', 'warning');
             return;
         }
         
@@ -11018,11 +11101,11 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 loadEventAssignedPeople(eventId);
                 await fetchAllData(); // Refresh to update people counts
             } else {
-                alert('Error saving assignments: ' + (result.error || 'Unknown error'));
+                showToast('Error saving assignments: ' + (result.error || 'Unknown error', 'error'));
             }
         } catch (error) {
             console.error('Error saving assignments:', error);
-            alert('Error saving assignments');
+            showToast('Error saving assignments', 'error');
         }
     }
     
@@ -11068,11 +11151,11 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 await fetchAllData();
                 populateEventsTable();
             } else {
-                alert('Error saving event: ' + (result.error || 'Unknown error'));
+                showToast('Error saving event: ' + (result.error || 'Unknown error', 'error'));
             }
         } catch (error) {
             console.error('Error saving event:', error);
-            alert('Error saving event');
+            showToast('Error saving event', 'error');
         }
     });
     
@@ -11144,15 +11227,15 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             
             const result = await response.json();
             if (result.success) {
-                alert('Event archived successfully. You can restore it from the Admin Panel.');
+                showToast('Event archived successfully.', 'success');
                 await fetchAllData();
                 populateEventsTable();
             } else {
-                alert('Error archiving event: ' + (result.error || 'Unknown error'));
+                showToast('Error archiving event: ' + (result.error || 'Unknown error', 'error'));
             }
         } catch (error) {
             console.error('Error archiving event:', error);
-            alert('Error archiving event');
+            showToast('Error archiving event', 'error');
         }
     }
     
@@ -11210,11 +11293,11 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 fileInput.value = '';
                 loadEventDocuments(eventId);
             } else {
-                alert('Error uploading document: ' + (result.error || 'Unknown error'));
+                showToast('Error uploading document: ' + (result.error || 'Unknown error', 'error'));
             }
         } catch (error) {
             console.error('Error uploading document:', error);
-            alert('Error uploading document');
+            showToast('Error uploading document', 'error');
         }
     }
     
@@ -11234,11 +11317,11 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             if (result.success) {
                 loadEventDocuments(eventId);
             } else {
-                alert('Error deleting document: ' + (result.error || 'Unknown error'));
+                showToast('Error deleting document: ' + (result.error || 'Unknown error', 'error'));
             }
         } catch (error) {
             console.error('Error deleting document:', error);
-            alert('Error deleting document');
+            showToast('Error deleting document', 'error');
         }
     }
     
@@ -11507,11 +11590,11 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 fileInput.value = '';
                 loadEventPanelDocuments(eventId);
             } else {
-                alert('Error uploading document: ' + (result.error || 'Unknown error'));
+                showToast('Error uploading document: ' + (result.error || 'Unknown error', 'error'));
             }
         } catch (error) {
             console.error('Error uploading document:', error);
-            alert('Error uploading document');
+            showToast('Error uploading document', 'error');
         }
     }
     
@@ -11529,11 +11612,11 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             if (result.success) {
                 loadEventPanelDocuments(eventId);
             } else {
-                alert('Error deleting document: ' + (result.error || 'Unknown error'));
+                showToast('Error deleting document: ' + (result.error || 'Unknown error', 'error'));
             }
         } catch (error) {
             console.error('Error deleting document:', error);
-            alert('Error deleting document');
+            showToast('Error deleting document', 'error');
         }
     }
     
@@ -11660,11 +11743,11 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 closeEventNoteModal();
                 loadEventNotes();
             } else {
-                alert('Error saving note: ' + (result.error || 'Unknown error'));
+                showToast('Error saving note: ' + (result.error || 'Unknown error', 'error'));
             }
         } catch (error) {
             console.error('Error saving note:', error);
-            alert('Error saving note');
+            showToast('Error saving note', 'error');
         }
     }
     
@@ -11678,11 +11761,11 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             if (result.success) {
                 loadEventNotes();
             } else {
-                alert('Error deleting note: ' + (result.error || 'Unknown error'));
+                showToast('Error deleting note: ' + (result.error || 'Unknown error', 'error'));
             }
         } catch (error) {
             console.error('Error deleting note:', error);
-            alert('Error deleting note');
+            showToast('Error deleting note', 'error');
         }
     }
 
@@ -12094,7 +12177,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             const data = await response.json();
             
             if (!data.success || !data.event) {
-                alert('Event not found');
+                showToast('Event not found.', 'warning');
                 return;
             }
             
@@ -12157,7 +12240,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             
         } catch (error) {
             console.error('Error loading event:', error);
-            alert('Error loading event details');
+            showToast('Error loading event details', 'error');
         }
     }
     
@@ -12213,11 +12296,11 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 pendingRecurringAction = null;
                 loadDeptEvents();
             } else {
-                alert('Error saving event: ' + (result.error || 'Unknown error'));
+                showToast('Error saving event: ' + (result.error || 'Unknown error', 'error'));
             }
         } catch (error) {
             console.error('Error saving event:', error);
-            alert('Error saving event');
+            showToast('Error saving event', 'error');
         }
     }
     
@@ -12244,11 +12327,11 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 closeDeptEventModal();
                 loadDeptEvents();
             } else {
-                alert('Error deleting event: ' + (result.error || 'Unknown error'));
+                showToast('Error deleting event: ' + (result.error || 'Unknown error', 'error'));
             }
         } catch (error) {
             console.error('Error deleting event:', error);
-            alert('Error deleting event');
+            showToast('Error deleting event', 'error');
         }
     }
     
@@ -12272,7 +12355,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                     closeDeptEventModal();
                     loadDeptEvents();
                 } else {
-                    alert('Error deleting instance: ' + (result.error || 'Unknown error'));
+                    showToast('Error deleting instance: ' + (result.error || 'Unknown error', 'error'));
                 }
             } catch (error) {
                 console.error('Error deleting instance:', error);
@@ -12554,13 +12637,13 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 // Select the new company as parent
                 selectParentCompany(data.id, newCompanyName);
                 document.getElementById('parentCompanyPrompt').style.display = 'none';
-                alert(`Company "${newCompanyName}" created successfully!`);
+                showToast(`Company "${newCompanyName}" created successfully!`, 'success');
             } else {
-                alert('Error creating company: ' + (data.error || 'Unknown error'));
+                showToast('Error creating company: ' + (data.error || 'Unknown error', 'error'));
             }
         } catch (error) {
             console.error('Error creating parent company:', error);
-            alert('Error creating company. Please try again.');
+            showToast('Error creating company. Please try again.', 'error');
         }
     }
     
@@ -12748,11 +12831,11 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 closeModal('companyModal');
                 await fetchAllData();
             } else {
-                alert('Error saving company: ' + (data.error || 'Unknown error'));
+                showToast('Error saving company: ' + (data.error || 'Unknown error', 'error'));
             }
         } catch (error) {
             console.error('Error saving company:', error);
-            alert('Error saving company. Please try again.');
+            showToast('Error saving company. Please try again.', 'error');
         }
     });
     
@@ -12817,7 +12900,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             }
         } catch (error) {
             console.error('Error loading company:', error);
-            alert('Error loading company details.');
+            showToast('Error loading company details.', 'error');
         }
     }
     
@@ -12897,13 +12980,13 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 await fetchAllData();
                 // Select the new company
                 selectCCCompany(data.id, newCompanyName);
-                alert(`Company "${newCompanyName}" created successfully!`);
+                showToast(`Company "${newCompanyName}" created successfully!`, 'success');
             } else {
-                alert('Error creating company: ' + (data.error || 'Unknown error'));
+                showToast('Error creating company: ' + (data.error || 'Unknown error', 'error'));
             }
         } catch (error) {
             console.error('Error creating company:', error);
-            alert('Error creating company. Please try again.');
+            showToast('Error creating company. Please try again.', 'error');
         }
     }
     
@@ -13070,7 +13153,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         
         const companyId = document.getElementById('ccCompanyId').value;
         if (!companyId) {
-            alert('Please select a company.');
+            showToast('Please select a company.', 'warning');
             return;
         }
         
@@ -13103,11 +13186,11 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 closeModal('companyContactModal');
                 await fetchAllData();
             } else {
-                alert('Error saving contact: ' + (data.error || 'Unknown error'));
+                showToast('Error saving contact: ' + (data.error || 'Unknown error', 'error'));
             }
         } catch (error) {
             console.error('Error saving company contact:', error);
-            alert('Error saving contact. Please try again.');
+            showToast('Error saving contact. Please try again.', 'error');
         }
     });
     
@@ -13162,7 +13245,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             }
         } catch (error) {
             console.error('Error loading company contact:', error);
-            alert('Error loading contact details.');
+            showToast('Error loading contact details.', 'error');
         }
     }
     
@@ -13220,7 +13303,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             }
         } catch (error) {
             console.error('Error loading company contact:', error);
-            alert('Error loading contact details.');
+            showToast('Error loading contact details.', 'error');
         }
     }
     
@@ -13332,7 +13415,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             }
         } catch (error) {
             console.error('Error loading company:', error);
-            alert('Error loading company details.');
+            showToast('Error loading company details.', 'error');
         }
     }
     
@@ -13609,7 +13692,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         const role = document.getElementById('linkOppRole').value;
         
         if (!opportunityId) {
-            alert('Please select an opportunity');
+            showToast('Please select an opportunity.', 'warning');
             return;
         }
         
@@ -13636,11 +13719,11 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                     renderCompanyContactLinkedItems();
                 }
             } else {
-                alert('Error linking opportunity: ' + (result.error || 'Unknown error'));
+                showToast('Error linking opportunity: ' + (result.error || 'Unknown error', 'error'));
             }
         } catch (error) {
             console.error('Error:', error);
-            alert('Error linking opportunity');
+            showToast('Error linking opportunity', 'error');
         }
     }
     
@@ -13651,7 +13734,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         const role = document.getElementById('linkPropRole').value;
         
         if (!proposalId) {
-            alert('Please select a proposal');
+            showToast('Please select a proposal.', 'warning');
             return;
         }
         
@@ -13678,11 +13761,11 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                     renderCompanyContactLinkedItems();
                 }
             } else {
-                alert('Error linking proposal: ' + (result.error || 'Unknown error'));
+                showToast('Error linking proposal: ' + (result.error || 'Unknown error', 'error'));
             }
         } catch (error) {
             console.error('Error:', error);
-            alert('Error linking proposal');
+            showToast('Error linking proposal', 'error');
         }
     }
     
@@ -13960,7 +14043,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         const role = document.getElementById('addContactOppRole').value;
         
         if (!contactId) {
-            alert('Please select a contact');
+            showToast('Please select a contact.', 'warning');
             return;
         }
         
@@ -13997,11 +14080,11 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 
                 renderOpportunityLinkedContacts(oppId);
             } else {
-                alert('Error adding contact: ' + (result.error || 'Unknown error'));
+                showToast('Error adding contact: ' + (result.error || 'Unknown error', 'error'));
             }
         } catch (error) {
             console.error('Error:', error);
-            alert('Error adding contact');
+            showToast('Error adding contact', 'error');
         }
     }
     
@@ -14012,7 +14095,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         const role = document.getElementById('addContactPropRole').value;
         
         if (!contactId) {
-            alert('Please select a contact');
+            showToast('Please select a contact.', 'warning');
             return;
         }
         
@@ -14045,11 +14128,11 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 
                 renderProposalLinkedContacts(propId);
             } else {
-                alert('Error adding contact: ' + (result.error || 'Unknown error'));
+                showToast('Error adding contact: ' + (result.error || 'Unknown error', 'error'));
             }
         } catch (error) {
             console.error('Error:', error);
-            alert('Error adding contact');
+            showToast('Error adding contact', 'error');
         }
     }
     
@@ -14259,11 +14342,11 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             if (data.success) {
                 await loadCompanyContactNotes(currentCompanyContactId);
             } else {
-                alert('Error deleting note: ' + (data.error || 'Unknown error'));
+                showToast('Error deleting note: ' + (data.error || 'Unknown error', 'error'));
             }
         } catch (error) {
             console.error('Error deleting note:', error);
-            alert('Error deleting note. Please try again.');
+            showToast('Error deleting note. Please try again.', 'error');
         }
     }
     
@@ -14290,11 +14373,11 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 closeModal('ccNoteModal');
                 await loadCompanyContactNotes(currentCompanyContactId);
             } else {
-                alert('Error saving note: ' + (data.error || 'Unknown error'));
+                showToast('Error saving note: ' + (data.error || 'Unknown error', 'error'));
             }
         } catch (error) {
             console.error('Error saving note:', error);
-            alert('Error saving note. Please try again.');
+            showToast('Error saving note. Please try again.', 'error');
         }
     });
 
@@ -14405,7 +14488,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         
         const opportunityId = document.getElementById('opportunityId').value;
         if (!opportunityId) {
-            alert('Please save the opportunity first before uploading documents.');
+            showToast('Please save the opportunity first before uploading documents.', 'warning');
             fileInput.value = '';
             return;
         }
@@ -14424,11 +14507,11 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             if (data.success) {
                 loadOpportunityDocuments(opportunityId);
             } else {
-                alert('Error uploading document: ' + (data.error || 'Unknown error'));
+                showToast('Error uploading document: ' + (data.error || 'Unknown error', 'error'));
             }
         } catch (error) {
             console.error('Error uploading document:', error);
-            alert('Error uploading document. Please try again.');
+            showToast('Error uploading document. Please try again.', 'error');
         }
         
         fileInput.value = '';
@@ -14443,7 +14526,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         
         const proposalId = document.getElementById('proposalId').value;
         if (!proposalId) {
-            alert('Please save the proposal first before uploading documents.');
+            showToast('Please save the proposal first before uploading documents.', 'warning');
             fileInput.value = '';
             return;
         }
@@ -14462,11 +14545,11 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             if (data.success) {
                 loadProposalDocuments(proposalId);
             } else {
-                alert('Error uploading document: ' + (data.error || 'Unknown error'));
+                showToast('Error uploading document: ' + (data.error || 'Unknown error', 'error'));
             }
         } catch (error) {
             console.error('Error uploading document:', error);
-            alert('Error uploading document. Please try again.');
+            showToast('Error uploading document. Please try again.', 'error');
         }
         
         fileInput.value = '';
@@ -14488,11 +14571,11 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 const opportunityId = document.getElementById('opportunityId').value;
                 loadOpportunityDocuments(opportunityId);
             } else {
-                alert('Error deleting document: ' + (data.error || 'Unknown error'));
+                showToast('Error deleting document: ' + (data.error || 'Unknown error', 'error'));
             }
         } catch (error) {
             console.error('Error deleting document:', error);
-            alert('Error deleting document. Please try again.');
+            showToast('Error deleting document. Please try again.', 'error');
         }
     }
     
@@ -14512,11 +14595,11 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 const proposalId = document.getElementById('proposalId').value;
                 loadProposalDocuments(proposalId);
             } else {
-                alert('Error deleting document: ' + (data.error || 'Unknown error'));
+                showToast('Error deleting document: ' + (data.error || 'Unknown error', 'error'));
             }
         } catch (error) {
             console.error('Error deleting document:', error);
-            alert('Error deleting document. Please try again.');
+            showToast('Error deleting document. Please try again.', 'error');
         }
     }
     
@@ -14579,7 +14662,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         if (!file) return;
         
         if (!currentOpportunityId) {
-            alert('No opportunity selected.');
+            showToast('No opportunity selected.', 'warning');
             fileInput.value = '';
             return;
         }
@@ -14598,11 +14681,11 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             if (data.success) {
                 loadOppPanelDocuments(currentOpportunityId);
             } else {
-                alert('Error uploading document: ' + (data.error || 'Unknown error'));
+                showToast('Error uploading document: ' + (data.error || 'Unknown error', 'error'));
             }
         } catch (error) {
             console.error('Error uploading document:', error);
-            alert('Error uploading document. Please try again.');
+            showToast('Error uploading document. Please try again.', 'error');
         }
         
         fileInput.value = '';
@@ -14623,11 +14706,11 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             if (data.success) {
                 loadOppPanelDocuments(opportunityId);
             } else {
-                alert('Error deleting document: ' + (data.error || 'Unknown error'));
+                showToast('Error deleting document: ' + (data.error || 'Unknown error', 'error'));
             }
         } catch (error) {
             console.error('Error deleting document:', error);
-            alert('Error deleting document. Please try again.');
+            showToast('Error deleting document. Please try again.', 'error');
         }
     }
     
@@ -14690,7 +14773,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         if (!file) return;
         
         if (!currentProposalId) {
-            alert('No proposal selected.');
+            showToast('No proposal selected.', 'warning');
             fileInput.value = '';
             return;
         }
@@ -14709,11 +14792,11 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             if (data.success) {
                 loadPropPanelDocuments(currentProposalId);
             } else {
-                alert('Error uploading document: ' + (data.error || 'Unknown error'));
+                showToast('Error uploading document: ' + (data.error || 'Unknown error', 'error'));
             }
         } catch (error) {
             console.error('Error uploading proposal document:', error);
-            alert('Error uploading document. Please try again.');
+            showToast('Error uploading document. Please try again.', 'error');
         }
         
         fileInput.value = '';
@@ -14734,11 +14817,11 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             if (data.success) {
                 loadPropPanelDocuments(proposalId);
             } else {
-                alert('Error deleting document: ' + (data.error || 'Unknown error'));
+                showToast('Error deleting document: ' + (data.error || 'Unknown error', 'error'));
             }
         } catch (error) {
             console.error('Error deleting proposal document:', error);
-            alert('Error deleting document. Please try again.');
+            showToast('Error deleting document. Please try again.', 'error');
         }
     }
     
