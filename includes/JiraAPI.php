@@ -83,30 +83,14 @@ class JiraAPI {
      * Exchange authorization code for tokens
      */
     public function handleOAuthCallback($code, $state) {
-        // Debug: Log session state
-        error_log('Jira OAuth - Received state: ' . $state);
-        error_log('Jira OAuth - Session state: ' . ($_SESSION['jira_oauth_state'] ?? 'NOT SET'));
-        error_log('Jira OAuth - Session user_id: ' . ($_SESSION['jira_oauth_user_id'] ?? 'NOT SET'));
-        error_log('Jira OAuth - Logged in user_id: ' . ($_SESSION['user_id'] ?? 'NOT SET'));
-        
-        // Verify state - but allow bypass if user is logged in
-        $stateValid = isset($_SESSION['jira_oauth_state']) && $state === $_SESSION['jira_oauth_state'];
-        $userLoggedIn = isset($_SESSION['user_id']) || isset($_SESSION['loggedin']);
-        
-        if (!$stateValid && !$userLoggedIn) {
-            throw new Exception('Invalid OAuth state and user not logged in');
+        // Verify OAuth state parameter to prevent CSRF
+        if (!isset($_SESSION['jira_oauth_state']) || !hash_equals($_SESSION['jira_oauth_state'], $state)) {
+            throw new Exception('Invalid OAuth state parameter');
         }
-        
-        if (!$stateValid) {
-            // State didn't match but user is logged in - this can happen with session issues
-            // Log a warning but continue
-            error_log('Jira OAuth WARNING: State mismatch but user is logged in, continuing...');
-        }
-        
+
         // Use logged-in user ID if OAuth user ID not in session
         if (!isset($_SESSION['jira_oauth_user_id']) && isset($_SESSION['user_id'])) {
             $this->userId = $_SESSION['user_id'];
-            error_log('Jira OAuth - Using session user_id: ' . $this->userId);
         }
         
         // Build token request
@@ -118,14 +102,8 @@ class JiraAPI {
             'redirect_uri' => JIRA_REDIRECT_URI
         ];
         
-        // Debug: Log what we're sending
-        error_log('Jira OAuth Token Request: ' . print_r($tokenData, true));
-        
         // Exchange code for tokens
         $response = $this->httpPostForToken(JIRA_TOKEN_URL, $tokenData);
-        
-        // Debug: Log response
-        error_log('Jira OAuth Token Response: ' . print_r($response, true));
         
         if (!isset($response['access_token'])) {
             throw new Exception('Failed to obtain access token: ' . json_encode($response));
@@ -851,9 +829,6 @@ class JiraAPI {
             preg_match('/HTTP\/\d\.\d\s+(\d+)/', $http_response_header[0], $matches);
             $httpCode = intval($matches[1] ?? 0);
         }
-        
-        error_log("Jira Token HTTP Code: $httpCode");
-        error_log("Jira Token Response: $response");
         
         $decoded = json_decode($response, true);
         

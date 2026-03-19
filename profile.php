@@ -1,5 +1,6 @@
 <?php
-session_start();
+require_once __DIR__ . '/includes/session_config.php';
+require_once 'includes/functions.php';
 
 // Check if the user is logged in
 if (!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true) {
@@ -10,11 +11,13 @@ if (!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true) {
 // Get display name (fallback to username)
 $display_name = $_SESSION["display_name"] ?? $_SESSION["username"];
 $role = ucfirst($_SESSION["role"]);
+$csrf_token = generate_csrf_token();
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="csrf-token" content="<?= htmlspecialchars($csrf_token) ?>">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Profile</title>
     <link rel="icon" type="image/x-icon" href="favicon.ico">
@@ -409,6 +412,10 @@ $role = ucfirst($_SESSION["role"]);
     
     <script>
     const API_URL = 'api.php';
+    const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    function csrfHeaders(extraHeaders = {}) {
+        return { 'X-CSRF-Token': CSRF_TOKEN, ...extraHeaders };
+    }
     let currentProfile = null;
     
     document.addEventListener('DOMContentLoaded', loadProfile);
@@ -486,7 +493,7 @@ $role = ucfirst($_SESSION["role"]);
         try {
             const response = await fetch(`${API_URL}?action=saveProfile`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify(profileData)
             });
             
@@ -525,6 +532,7 @@ $role = ucfirst($_SESSION["role"]);
         try {
             const response = await fetch(`${API_URL}?action=uploadProfilePhoto`, {
                 method: 'POST',
+                headers: csrfHeaders(),
                 body: formData
             });
             
@@ -592,7 +600,7 @@ $role = ucfirst($_SESSION["role"]);
         try {
             const response = await fetch(`${API_URL}?action=changePassword`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({
                     current_password: currentPassword,
                     new_password: newPassword,

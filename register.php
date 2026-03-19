@@ -1,13 +1,18 @@
 <?php
-session_start();
+require_once __DIR__ . '/includes/session_config.php';
 require 'db_connect.php';
+require_once 'includes/functions.php';
 
+$csrf_token = generate_csrf_token();
 $username = $password = $confirm_password = "";
 $username_err = $password_err = $confirm_password_err = $register_err = "";
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    if (!validate_csrf_token($_POST['csrf_token'] ?? '')) {
+        $register_err = "Invalid request. Please try again.";
+    } else {
     $username = trim($_POST["username"] ?? '');
-    $password = trim($_POST["password"] ?? '');
+    $password = $_POST["password"] ?? '';
     $confirm_password = trim($_POST["confirm_password"] ?? '');
 
     if (empty($username)) $username_err = "Please enter a username.";
@@ -41,6 +46,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
     }
      $conn->close();
+    } // end CSRF validation else
 }
 ?>
 <!DOCTYPE html>
@@ -79,6 +85,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <h2>Create Account</h2>
     <p style="text-align:center; color: #555; margin-bottom: 20px;">Your account will require admin approval after registration.</p>
     <form action="register.php" method="post">
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
         <?php if(!empty($register_err)): ?>
             <div class="message"><?= htmlspecialchars($register_err); ?></div>
         <?php endif; ?>
@@ -86,7 +93,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <div class="form-group">
             <label for="username">Username</label>
             <input type="text" id="username" name="username" value="<?= htmlspecialchars($username); ?>" required>
-            <?php if(!empty($username_err)): ?><div class="error-msg"><?= $username_err; ?></div><?php endif; ?>
+            <?php if(!empty($username_err)): ?><div class="error-msg"><?= htmlspecialchars($username_err); ?></div><?php endif; ?>
         </div>
         <div class="form-group">
             <label for="password">Password</label>
@@ -94,14 +101,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <button type="button" class="toggle-password" onclick="toggleVis('password', this)" aria-label="Show password">Show password</button>
             <div class="strength-bar-container"><div class="strength-bar" id="strengthBar"></div></div>
             <div class="strength-text" id="strengthText"></div>
-            <?php if(!empty($password_err)): ?><div class="error-msg"><?= $password_err; ?></div><?php endif; ?>
+            <?php if(!empty($password_err)): ?><div class="error-msg"><?= htmlspecialchars($password_err); ?></div><?php endif; ?>
         </div>
         <div class="form-group">
             <label for="confirm_password">Confirm Password</label>
             <input type="password" id="confirm_password" name="confirm_password" required oninput="checkMatch();">
             <button type="button" class="toggle-password" onclick="toggleVis('confirm_password', this)" aria-label="Show password">Show password</button>
             <div id="matchIndicator" class="match-indicator"></div>
-            <?php if(!empty($confirm_password_err)): ?><div class="error-msg"><?= $confirm_password_err; ?></div><?php endif; ?>
+            <?php if(!empty($confirm_password_err)): ?><div class="error-msg"><?= htmlspecialchars($confirm_password_err); ?></div><?php endif; ?>
         </div>
         <button type="submit" id="registerBtn">Register</button>
         <div class="login-link">

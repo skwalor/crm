@@ -6,7 +6,7 @@ ini_set('display_errors', 0);
 // Start output buffering to catch any stray output
 ob_start();
 
-session_start();
+require_once __DIR__ . '/includes/session_config.php';
 
 // Clean any output that might have occurred during session_start or includes
 ob_clean();
@@ -71,7 +71,16 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
     send_error('Unauthorized', 401);
 }
 
+// --- CSRF PROTECTION ---
 $action = $_GET['action'] ?? '';
+
+// Validate CSRF token on all state-changing requests
+if ($_SERVER['REQUEST_METHOD'] === 'POST' || $_SERVER['REQUEST_METHOD'] === 'PUT' || $_SERVER['REQUEST_METHOD'] === 'DELETE') {
+    $csrf_token = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+    if (!validate_csrf_token($csrf_token)) {
+        send_error('Invalid CSRF token', 403);
+    }
+}
 
 // --- SPECIALTY ROLE HELPER FUNCTIONS ---
 // Returns true if current user has specialty role
@@ -3126,7 +3135,7 @@ switch ($action) {
         break;
     
     case 'uploadEventDocument':
-        if (!has_permission('event', 'view')) send_error('Permission denied.', 403);
+        if (!has_permission('event', 'update')) send_error('Permission denied.', 403);
         
         $event_id = intval($_POST['event_id'] ?? 0);
         if ($event_id <= 0) send_error('Invalid event ID', 400);
@@ -3298,31 +3307,42 @@ switch ($action) {
     case 'uploadProfilePhoto':
         // Handle profile photo upload
         $user_id = $_SESSION['user_id'];
-        
+
         if (!isset($_FILES['photo']) || $_FILES['photo']['error'] !== UPLOAD_ERR_OK) {
             send_error('No file uploaded or upload error', 400);
         }
-        
+
         $file = $_FILES['photo'];
-        $allowed_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-        
-        if (!in_array($file['type'], $allowed_types)) {
+
+        // Validate file extension (not just MIME type which is client-spoofable)
+        $allowed_extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+        $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+
+        if (!in_array($extension, $allowed_extensions)) {
             send_error('Invalid file type. Please upload a JPEG, PNG, GIF, or WebP image.', 400);
         }
-        
+
+        // Also validate MIME type as defense-in-depth
+        $allowed_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        $finfo = new finfo(FILEINFO_MIME_TYPE);
+        $actual_mime = $finfo->file($file['tmp_name']);
+
+        if (!in_array($actual_mime, $allowed_types)) {
+            send_error('Invalid file content. File does not appear to be a valid image.', 400);
+        }
+
         // Max file size: 2MB
         if ($file['size'] > 2 * 1024 * 1024) {
             send_error('File size too large. Maximum size is 2MB.', 400);
         }
-        
+
         // Create uploads directory if it doesn't exist
         $upload_dir = 'uploads/profiles/';
         if (!is_dir($upload_dir)) {
             mkdir($upload_dir, 0755, true);
         }
-        
-        // Generate unique filename
-        $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+
+        // Generate unique filename with validated extension
         $filename = 'profile_' . $user_id . '_' . time() . '.' . $extension;
         $filepath = $upload_dir . $filename;
         
@@ -4627,7 +4647,7 @@ switch ($action) {
         break;
     
     case 'uploadOpportunityDocument':
-        if (!has_permission('opportunity', 'view')) send_error('Permission denied.', 403);
+        if (!has_permission('opportunity', 'update')) send_error('Permission denied.', 403);
         
         $opportunity_id = intval($_POST['opportunity_id'] ?? 0);
         if ($opportunity_id <= 0) send_error('Invalid opportunity ID', 400);
@@ -4693,7 +4713,7 @@ switch ($action) {
         break;
     
     case 'uploadProposalDocument':
-        if (!has_permission('proposal', 'view')) send_error('Permission denied.', 403);
+        if (!has_permission('proposal', 'update')) send_error('Permission denied.', 403);
         
         $proposal_id = intval($_POST['proposal_id'] ?? 0);
         if ($proposal_id <= 0) send_error('Invalid proposal ID', 400);

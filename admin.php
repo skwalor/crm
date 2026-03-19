@@ -1,16 +1,10 @@
 <?php
-// Debug mode: set to false in production
-$debug_mode = isset($_GET['debug']) && $_GET['debug'] === '1';
-if ($debug_mode) {
-    error_reporting(E_ALL);
-    ini_set('display_errors', 1);
-} else {
-    error_reporting(0);
-    ini_set('display_errors', 0);
-}
+error_reporting(E_ERROR | E_PARSE);
+ini_set('display_errors', 0);
 
-session_start();
+require_once __DIR__ . '/includes/session_config.php';
 require_once 'db_connect.php';
+require_once 'includes/functions.php';
 
 // Security Check - Redirect if not admin
 if (!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true || $_SESSION["role"] !== 'admin') {
@@ -18,20 +12,18 @@ if (!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true || $_SESSION
     exit;
 }
 
+$csrf_token = generate_csrf_token();
+
 $message = '';
 $message_type = 'success';
-$debug_info = '';
-
-// DEBUG: Check what's being posted
-if ($_SERVER["REQUEST_METHOD"] === "POST") {
-    $debug_info = "POST received. Keys: " . implode(', ', array_keys($_POST));
-    if (isset($_POST['change_role_user_id'])) {
-        $debug_info .= " | User ID: " . $_POST['change_role_user_id'] . " | New Role: " . ($_POST['new_role'] ?? 'NOT SET');
-    }
-}
 
 // Handle Form Submissions
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    // Validate CSRF token
+    if (!validate_csrf_token($_POST['csrf_token'] ?? '')) {
+        $message = "Invalid request. Please try again.";
+        $message_type = 'error';
+    } else {
     
     // Handle User Approval
     if (isset($_POST['approve_user_id'])) {
@@ -49,14 +41,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     // Handle Role Change
     if (isset($_POST['change_role_user_id']) && isset($_POST['new_role'])) {
-        $debug_info .= " | ROLE CHANGE HANDLER REACHED";
         
         $user_id_to_change = intval($_POST['change_role_user_id']);
         $new_role = trim($_POST['new_role']);
         $allowed_roles = ['admin', 'manager', 'user', 'specialty'];
         $current_user_id = intval($_SESSION['user_id']); // Cast to int for proper comparison
         
-        $debug_info .= " | Parsed: uid=$user_id_to_change, role=$new_role, current_uid=$current_user_id";
 
         if (!in_array($new_role, $allowed_roles)) {
             $message = "Error: Invalid role '{$new_role}' specified.";
@@ -69,7 +59,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             if ($stmt) {
                 $stmt->bind_param("si", $new_role, $user_id_to_change);
                 if ($stmt->execute()) {
-                    $debug_info .= " | SQL executed, affected_rows=" . $stmt->affected_rows;
                     if ($stmt->affected_rows > 0) {
                         $conn->commit(); // Ensure change is committed
                         $message = "User role has been updated to '{$new_role}' successfully. The user must log out and log back in for the change to take effect.";
@@ -78,14 +67,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                         $message_type = 'error';
                     }
                 } else {
-                    $debug_info .= " | SQL execute failed: " . $stmt->error;
-                    $message = "Error: Database error - " . $stmt->error;
+                    $message = "Error: Could not complete the operation.";
                     $message_type = 'error';
                 }
                 $stmt->close();
             } else {
-                $debug_info .= " | SQL prepare failed: " . $conn->error;
-                $message = "Error: Could not prepare statement - " . $conn->error;
+                $message = "Error: Could not complete the operation.";
                 $message_type = 'error';
             }
         } else {
@@ -173,6 +160,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $stmt->close();
         }
     }
+    } // end CSRF validation else
 }
 
 // Check if 'active' column exists, if not create it
@@ -190,6 +178,7 @@ $conn->close();
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="csrf-token" content="<?= htmlspecialchars($csrf_token) ?>">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel - User Management</title>
     <style>
@@ -295,9 +284,6 @@ $conn->close();
             <div class="message <?php echo $message_type; ?>"><?php echo htmlspecialchars($message); ?></div>
         <?php endif; ?>
         
-        <?php if ($debug_mode && !empty($debug_info)): ?>
-            <div class="message" style="background: #fff3cd; color: #856404;"><?php echo htmlspecialchars($debug_info); ?></div>
-        <?php endif; ?>
         
         <!-- Admin Tabs -->
         <div class="admin-tabs">
@@ -348,6 +334,7 @@ $conn->close();
                                 <?php if (!$user['approved']): ?>
                                     <!-- Approve Button -->
                                     <form action="admin.php" method="post" style="margin:0;">
+                                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
                                         <input type="hidden" name="approve_user_id" value="<?php echo $user['id']; ?>">
                                         <button type="submit" class="btn btn-approve" title="Approve User">✓ Approve</button>
                                     </form>
@@ -357,6 +344,7 @@ $conn->close();
                                     <?php if ($user['approved']): ?>
                                         <!-- Role Change -->
                                         <form action="admin.php" method="post" style="margin:0; display: flex; gap: 5px;">
+                                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
                                             <input type="hidden" name="change_role_user_id" value="<?php echo $user['id']; ?>">
                                             <select name="new_role" class="role-select">
                                                 <option value="user" <?php if ($user['role'] === 'user') echo 'selected'; ?>>User</option>
@@ -370,6 +358,7 @@ $conn->close();
                                     
                                     <!-- Toggle Active/Inactive -->
                                     <form action="admin.php" method="post" style="margin:0;">
+                                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
                                         <input type="hidden" name="toggle_active_user_id" value="<?php echo $user['id']; ?>">
                                         <input type="hidden" name="new_active_status" value="<?php echo $user['active'] ? 0 : 1; ?>">
                                         <?php if ($user['active']): ?>
@@ -384,6 +373,7 @@ $conn->close();
                                     
                                     <!-- Delete User -->
                                     <form action="admin.php" method="post" style="margin:0;">
+                                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
                                         <input type="hidden" name="delete_user_id" value="<?php echo $user['id']; ?>">
                                         <button type="submit" class="btn btn-delete" title="Delete User" onclick="return confirm('Are you sure you want to permanently delete user \'<?php echo htmlspecialchars($user['username'], ENT_QUOTES); ?>\'? This action cannot be undone.');">🗑 Delete</button>
                                     </form>
@@ -417,6 +407,7 @@ $conn->close();
             <h3>🔑 Reset Password</h3>
             <p>Enter a new password for <strong id="resetUsername"></strong>:</p>
             <form action="admin.php" method="post" id="resetForm">
+                                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
                 <input type="hidden" name="reset_password_user_id" id="resetUserId">
                 <input type="password" name="new_password" id="newPassword" placeholder="New password (min 6 characters)" required minlength="6">
                 <div class="modal-buttons">
@@ -437,6 +428,11 @@ $conn->close();
         @keyframes toastOut{from{opacity:1;transform:translateY(0);}to{opacity:0;transform:translateY(20px);}}
     </style>
     <script>
+        const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]')?.content || '';
+        function csrfHeaders(extraHeaders = {}) {
+            return { 'X-CSRF-Token': CSRF_TOKEN, ...extraHeaders };
+        }
+
         function showToast(msg, type='info', duration=3500) {
             const c = document.getElementById('toastContainer');
             const t = document.createElement('div');
@@ -613,7 +609,7 @@ $conn->close();
             try {
                 const response = await fetch('api.php?action=restoreOpportunity', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                     body: JSON.stringify({ id: id })
                 });
                 const data = await response.json();
@@ -637,7 +633,7 @@ $conn->close();
             try {
                 const response = await fetch('api.php?action=restoreProposal', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                     body: JSON.stringify({ id: id })
                 });
                 const data = await response.json();
@@ -662,7 +658,7 @@ $conn->close();
             try {
                 const response = await fetch('api.php?action=permanentlyDeleteOpportunity', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                     body: JSON.stringify({ id: id })
                 });
                 const data = await response.json();
@@ -687,7 +683,7 @@ $conn->close();
             try {
                 const response = await fetch('api.php?action=permanentlyDeleteProposal', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                     body: JSON.stringify({ id: id })
                 });
                 const data = await response.json();
@@ -711,7 +707,7 @@ $conn->close();
             try {
                 const response = await fetch('api.php?action=restoreTask', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                     body: JSON.stringify({ id: id })
                 });
                 const data = await response.json();
@@ -736,7 +732,7 @@ $conn->close();
             try {
                 const response = await fetch('api.php?action=permanentlyDeleteTask', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                     body: JSON.stringify({ id: id })
                 });
                 const data = await response.json();

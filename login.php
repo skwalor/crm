@@ -1,5 +1,5 @@
 <?php
-session_start();
+require_once __DIR__ . '/includes/session_config.php';
 
 // If user is already logged in, redirect to index page
 if (isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true) {
@@ -17,8 +17,13 @@ if (isset($_GET['status']) && $_GET['status'] === 'reg_success') {
     $message = 'Registration successful! Please wait for an administrator to approve your account.';
 }
 
+$csrf_token = generate_csrf_token();
+
 // Handle POST login
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!validate_csrf_token($_POST['csrf_token'] ?? '')) {
+        $message = 'Invalid request. Please try again.';
+    } else {
     $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
 
@@ -67,6 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->close();
     }
     $conn->close();
+    } // end CSRF validation else
 }
 ?>
 <!DOCTYPE html>
@@ -109,6 +115,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <p style="text-align:center;color:#667eea;font-weight:600;margin-bottom:20px;font-size:1.1em;">Welcome to the Savagely Spicy Carrot CRM</p>
     <h2>Login</h2>
     <form method="POST" action="login.php">
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
         <div class="form-group">
             <label for="username">Username</label>
             <input type="text" id="username" name="username" autocomplete="username" required>

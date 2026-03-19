@@ -1,15 +1,18 @@
 <?php
-session_start();
+require_once __DIR__ . '/includes/session_config.php';
  
 if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
     header("location: login.php");
     exit;
 }
+require_once 'includes/functions.php';
+$csrf_token = generate_csrf_token();
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="csrf-token" content="<?= htmlspecialchars($csrf_token) ?>">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IntePros Federal Celios.AI CRM</title>
     <link rel="icon" type="image/x-icon" href="favicon.ico">
@@ -3101,7 +3104,13 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
     let currentUserId = null, currentUsername = '', currentDisplayName = '', currentRole = '';
     let currentEditId = null;
     const API_URL = 'api.php';
-    
+    const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+    // Helper to add CSRF header to fetch options
+    function csrfHeaders(extraHeaders = {}) {
+        return { 'X-CSRF-Token': CSRF_TOKEN, ...extraHeaders };
+    }
+
     // Calendar state
     let calendarView = 'month'; // 'month', 'week', 'day'
     let calendarDate = new Date(); // Current viewing date
@@ -3297,7 +3306,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         // Agency filter for contacts
         const agencyFilter = document.getElementById('agencyFilter');
         if (agencyFilter) {
-            agencyFilter.innerHTML = '<option value="ALL">All Agencies</option>' + agencies.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+            agencyFilter.innerHTML = '<option value="ALL">All Agencies</option>' + agencies.map(a => `<option value="${a.id}">${escapeHtml(a.name)}</option>`).join('');
         }
     }
 
@@ -3469,11 +3478,11 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 <div class="agency-card" data-agency-id="${agency.id}">
                     <div class="agency-card-header">
                         <div class="agency-card-title">
-                            <span>${agency.name || ''}</span>
+                            <span>${escapeHtml(agency.name || '')}</span>
                         </div>
                         <div class="agency-card-meta">
-                            <span>${agency.location || 'N/A'}</span>
-                            <span>${agency.type || 'N/A'}</span>
+                            <span>${escapeHtml(agency.location || 'N/A')}</span>
+                            <span>${escapeHtml(agency.type || 'N/A')}</span>
                             <span class="status-badge status-${(agency.status || '').toLowerCase()}">${agency.status || ''}</span>
                             <span>${agency.contactCount || 0} ${Number(agency.contactCount) === 1 ? 'contact' : 'contacts'}</span>
                         </div>
@@ -3486,12 +3495,12 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                             <div class="division-row" data-division-id="${div.id || ''}" ${div.fromContacts ? 'data-from-contacts="true"' : ''}>
                                 <div class="division-name">
                                     <span class="division-arrow">↳</span>
-                                    <span>${div.name}</span>
+                                    <span>${escapeHtml(div.name)}</span>
                                     ${div.fromContacts ? '<span class="division-source-badge">(from contacts)</span>' : ''}
                                 </div>
                                 ${canDeleteDivision && div.id ? `
                                     <div class="division-actions">
-                                        <button class="btn-delete-division" onclick="deleteDivision(${div.id}, '${div.name.replace(/'/g, "\\'")}')">Delete</button>
+                                        <button class="btn-delete-division" onclick="deleteDivision(${div.id}, '${escapeHtml(div.name).replace(/'/g, "\\'")}')">Delete</button>
                                     </div>
                                 ` : ''}
                             </div>
@@ -3549,7 +3558,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             const response = await fetch(`${API_URL}?action=saveDivision`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({ agency_id: agencyId, name: name })
             });
             
@@ -3627,7 +3636,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             html += `
                 <div class="contact-agency-card" data-agency-id="${agencyId}">
                     <div class="contact-agency-header">
-                        <div class="contact-agency-title">${group.name}</div>
+                        <div class="contact-agency-title">${escapeHtml(group.name)}</div>
                         <div class="contact-agency-meta">
                             <span>${group.contacts.length} contacts</span>
                         </div>
@@ -3646,12 +3655,12 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                             return `
                                 <div class="contact-row" data-contact-id="${item.id}">
                                     <div class="contact-name-cell">
-                                        <span class="contact-name" onclick="showContactDetail(${item.id})">${item.firstName || ''} ${item.lastName || ''}</span>
-                                        <span class="contact-email">${item.email || ''}</span>
+                                        <span class="contact-name" onclick="showContactDetail(${item.id})">${escapeHtml(item.firstName || '')} ${escapeHtml(item.lastName || '')}</span>
+                                        <span class="contact-email">${escapeHtml(item.email || '')}</span>
                                     </div>
-                                    <div class="contact-division">${item.division || '—'}</div>
-                                    <div class="contact-role">${item.title || '—'}</div>
-                                    <div class="contact-owner"><span class="owner-badge">${ownerName}</span></div>
+                                    <div class="contact-division">${escapeHtml(item.division || '—')}</div>
+                                    <div class="contact-role">${escapeHtml(item.title || '—')}</div>
+                                    <div class="contact-owner"><span class="owner-badge">${escapeHtml(ownerName)}</span></div>
                                     <div class="contact-actions">
                                         <button class="action-btn" style="background: #17a2b8;" onclick="openContactNotes(${item.id})" title="View Notes">Notes</button>
                                         ${getActionsHtml('contact', item.id, true)}
@@ -3697,13 +3706,13 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             if (item.co_owner_contact_type && item.coOwnerDisplayName) {
                 const typeIcon = item.co_owner_contact_type === 'user' ? '👤' : item.co_owner_contact_type === 'federal' ? '🏛️' : '🏢';
                 const typeTitle = item.co_owner_contact_type === 'user' ? 'User' : item.co_owner_contact_type === 'federal' ? 'Federal Contact' : 'Commercial Contact';
-                coOwnerBadge = `<span class="owner-badge" title="${typeTitle}">${typeIcon} ${item.coOwnerDisplayName}</span>`;
+                coOwnerBadge = `<span class="owner-badge" title="${typeTitle}">${typeIcon} ${escapeHtml(item.coOwnerDisplayName)}</span>`;
             }
-            
+
             // Archive button - uses permission system (specialty users cannot archive)
             const canArchiveOpp = !window.isSpecialty && userPermissions.opportunity?.can_archive === true;
-            const archiveBtn = canArchiveOpp 
-                ? `<button class="action-btn" style="background: #6c757d;" onclick="archiveOpportunity(${item.id}, '${(item.title || '').replace(/'/g, "\\'")}')" title="Archive">📦</button>`
+            const archiveBtn = canArchiveOpp
+                ? `<button class="action-btn" style="background: #6c757d;" onclick="archiveOpportunity(${item.id}, '${escapeHtml(item.title || '').replace(/'/g, "\\'")}')" title="Archive">📦</button>`
                 : '';
             
             // For converted opportunities, show view-only actions
@@ -3714,10 +3723,10 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             
             return `
                 <tr class="priority-${(item.priority || 'low').toLowerCase()} ${isConverted ? 'converted-row' : ''}">
-                    <td><span class="clickable-name" onclick="openOpportunityWorkspace(${item.id})">${item.title || ''}</span></td>
-                    <td>${item.agencyName || '—'}</td>
-                    <td>${item.division || '—'}</td>
-                    <td><span class="owner-badge">👤 ${ownerName}</span></td>
+                    <td><span class="clickable-name" onclick="openOpportunityWorkspace(${item.id})">${escapeHtml(item.title || '')}</span></td>
+                    <td>${escapeHtml(item.agencyName || '—')}</td>
+                    <td>${escapeHtml(item.division || '—')}</td>
+                    <td><span class="owner-badge">👤 ${escapeHtml(ownerName)}</span></td>
                     <td>${coOwnerBadge}</td>
                     <td>$${parseFloat(item.value || 0).toLocaleString()}</td>
                     <td>${statusBadge}</td>
@@ -3747,14 +3756,14 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 : '';
             // Archive button - uses permission system (specialty users cannot archive)
             const canArchiveProp = !window.isSpecialty && userPermissions.proposal?.can_archive === true;
-            const archiveBtn = canArchiveProp 
-                ? `<button class="action-btn" style="background: #6c757d;" onclick="archiveProposal(${item.id}, '${(item.title || '').replace(/'/g, "\\'")}')" title="Archive">📦</button>`
+            const archiveBtn = canArchiveProp
+                ? `<button class="action-btn" style="background: #6c757d;" onclick="archiveProposal(${item.id}, '${escapeHtml(item.title || '').replace(/'/g, "\\'")}')" title="Archive">📦</button>`
                 : '';
             return `
                 <tr>
-                    <td><span class="clickable-name" onclick="openProposalPanel(${item.id})">${convertedFrom}${item.title || ''}</span></td>
-                    <td>${item.agencyName || '—'}</td>
-                    <td><span class="owner-badge">👤 ${ownerName}</span></td>
+                    <td><span class="clickable-name" onclick="openProposalPanel(${item.id})">${convertedFrom}${escapeHtml(item.title || '')}</span></td>
+                    <td>${escapeHtml(item.agencyName || '—')}</td>
+                    <td><span class="owner-badge">👤 ${escapeHtml(ownerName)}</span></td>
                     <td>$${parseFloat(item.value || 0).toLocaleString()}</td>
                     <td><span class="status-badge status-${(item.status || '').toLowerCase().replace(' ', '')}">${item.status || ''}</span></td>
                     <td>${item.submitDate || '—'}</td>
@@ -3781,17 +3790,17 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             const relatedDisplay = item.relatedTo ? `${item.relatedTo}${relatedItemName ? ': ' + relatedItemName : ''}` : '—';
             // Archive button for admin and user roles (not manager or specialty)
             const canArchiveTask = !window.isSpecialty && (currentRole === 'admin' || currentRole === 'user');
-            const archiveBtn = canArchiveTask 
-                ? `<button class="action-btn" style="background: #6c757d;" onclick="archiveTask(${item.id}, '${(item.title || '').replace(/'/g, "\\'")}')" title="Archive">📦</button>`
+            const archiveBtn = canArchiveTask
+                ? `<button class="action-btn" style="background: #6c757d;" onclick="archiveTask(${item.id}, '${escapeHtml(item.title || '').replace(/'/g, "\\'")}')" title="Archive">📦</button>`
                 : '';
             return `
                 <tr class="priority-${(item.priority || 'low').toLowerCase()}">
-                    <td>${item.title || ''}</td>
-                    <td>${relatedDisplay}</td>
+                    <td>${escapeHtml(item.title || '')}</td>
+                    <td>${escapeHtml(relatedDisplay)}</td>
                     <td>${item.dueDate || ''}</td>
                     <td>${item.priority || ''}</td>
                     <td><span class="status-badge status-${(item.status || '').toLowerCase().replace(' ', '')}">${item.status || ''}</span></td>
-                    <td>${assignedName}</td>
+                    <td>${escapeHtml(assignedName)}</td>
                     <td><div class="action-buttons">${getActionsHtml('task', item.id)}${archiveBtn}</div></td>
                 </tr>
             `;
@@ -3994,7 +4003,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             </div>
             <div class="task-panel-row">
                 <div class="task-panel-label">Agency</div>
-                <div class="task-panel-value">${proposal.agencyName || '—'}</div>
+                <div class="task-panel-value">${escapeHtml(proposal.agencyName || '—')}</div>
             </div>
             <div class="task-panel-row">
                 <div class="task-panel-label">Value</div>
@@ -4006,7 +4015,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             </div>
             <div class="task-panel-row">
                 <div class="task-panel-label">Owner</div>
-                <div class="task-panel-value">${ownerName}</div>
+                <div class="task-panel-value">${escapeHtml(ownerName)}</div>
             </div>
             <div class="task-panel-row">
                 <div class="task-panel-label">Submit Date</div>
@@ -4018,7 +4027,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             </div>
             <div class="task-panel-row">
                 <div class="task-panel-label">Description</div>
-                <div class="task-panel-value">${proposal.description || 'No description provided.'}</div>
+                <div class="task-panel-value">${escapeHtml(proposal.description || 'No description provided.')}</div>
             </div>
         `;
         
@@ -4066,7 +4075,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 content += '<table class="data-table"><thead><tr><th>Task</th><th>Due Date</th><th>Priority</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
                 (data.tasks || []).slice(0, 5).forEach(t => {
                     content += `<tr class="priority-${(t.priority || 'low').toLowerCase()}">
-                        <td><strong>${t.title || ''}</strong></td>
+                        <td><strong>${escapeHtml(t.title || '')}</strong></td>
                         <td>${t.dueDate || ''}</td>
                         <td>${t.priority || ''}</td>
                         <td><span class="status-badge status-${(t.status || '').toLowerCase().replace(' ', '')}">${t.status || ''}</span></td>
@@ -4089,8 +4098,8 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 content += '<table class="data-table"><thead><tr><th>Opportunity</th><th>Agency</th><th>Value</th><th>Due Date</th></tr></thead><tbody>';
                 (data.opportunities || []).slice(0, 3).forEach(o => {
                     content += `<tr class="priority-${(o.priority || 'low').toLowerCase()}">
-                        <td><strong>${o.title || ''}</strong></td>
-                        <td>${o.agencyName || ''}</td>
+                        <td><strong>${escapeHtml(o.title || '')}</strong></td>
+                        <td>${escapeHtml(o.agencyName || '')}</td>
                         <td>$${parseFloat(o.value || 0).toLocaleString()}</td>
                         <td>${o.dueDate || ''}</td>
                     </tr>`;
@@ -4111,8 +4120,8 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 content += '<table class="data-table"><thead><tr><th>Proposal</th><th>Agency</th><th>Value</th><th>Status</th></tr></thead><tbody>';
                 (data.proposals || []).slice(0, 3).forEach(p => {
                     content += `<tr>
-                        <td><strong>${p.title || ''}</strong></td>
-                        <td>${p.agencyName || ''}</td>
+                        <td><strong>${escapeHtml(p.title || '')}</strong></td>
+                        <td>${escapeHtml(p.agencyName || '')}</td>
                         <td>$${parseFloat(p.value || 0).toLocaleString()}</td>
                         <td><span class="status-badge status-${(p.status || '').toLowerCase().replace(' ', '')}">${p.status || ''}</span></td>
                     </tr>`;
@@ -4133,7 +4142,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             const response = await fetch(`${API_URL}?action=quickUpdateTask`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({ id: taskId, status: 'Done' })
             });
             
@@ -4405,7 +4414,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             const response = await fetch(`${API_URL}?action=archiveOpportunity`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({ id: id })
             });
             const data = await response.json();
@@ -4414,7 +4423,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 showToast('Opportunity archived successfully.', 'success');
                 await fetchAllData();
             } else {
-                showToast('Error: ' + (data.error || 'Failed to archive opportunity', 'error'));
+                showToast('Error: ' + (data.error || 'Failed to archive opportunity'), 'error');
             }
         } catch (error) {
             console.error('Error archiving opportunity:', error);
@@ -4429,7 +4438,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             const response = await fetch(`${API_URL}?action=archiveProposal`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({ id: id })
             });
             const data = await response.json();
@@ -4438,7 +4447,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 showToast('Proposal archived successfully.', 'success');
                 await fetchAllData();
             } else {
-                showToast('Error: ' + (data.error || 'Failed to archive proposal', 'error'));
+                showToast('Error: ' + (data.error || 'Failed to archive proposal'), 'error');
             }
         } catch (error) {
             console.error('Error archiving proposal:', error);
@@ -4453,7 +4462,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             const response = await fetch(`${API_URL}?action=archiveTask`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({ id: id })
             });
             const data = await response.json();
@@ -4462,7 +4471,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 showToast('Task archived successfully.', 'success');
                 await fetchAllData();
             } else {
-                showToast('Error: ' + (data.error || 'Failed to archive task', 'error'));
+                showToast('Error: ' + (data.error || 'Failed to archive task'), 'error');
             }
         } catch (error) {
             console.error('Error archiving task:', error);
@@ -4497,7 +4506,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             const response = await fetch(`${API_URL}?action=save${type.charAt(0).toUpperCase() + type.slice(1)}`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify(data)
             });
             if (!response.ok) {
@@ -4593,8 +4602,8 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         
         // Show opportunity info
         document.getElementById('convertOpportunityInfo').innerHTML = `
-            <strong>${opportunity.title}</strong><br>
-            <span style="color: #6c757d;">Agency: ${opportunity.agencyName || 'N/A'}</span><br>
+            <strong>${escapeHtml(opportunity.title)}</strong><br>
+            <span style="color: #6c757d;">Agency: ${escapeHtml(opportunity.agencyName || 'N/A')}</span><br>
             <span style="color: #6c757d;">Value: $${parseFloat(opportunity.value || 0).toLocaleString()}</span>
         `;
         
@@ -4625,7 +4634,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             const response = await fetch(`${API_URL}?action=convertOpportunityToProposal`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({
                     opportunity_id: opportunityId,
                     winProbability: winProbability,
@@ -4650,7 +4659,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                     showTab('proposals', proposalsTab);
                 }
             } else {
-                showToast('Error: ' + (result.error || 'Failed to convert opportunity', 'error'));
+                showToast('Error: ' + (result.error || 'Failed to convert opportunity'), 'error');
             }
         } catch (error) {
             console.error('Error converting opportunity:', error);
@@ -4949,9 +4958,9 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 const contactType = item.contactType || '';
                 const badge = contactType ? `<span class="contact-type-badge ${contactType}">${contactType === 'commercial' ? 'Commercial' : 'Federal'}</span>` : '';
                 return `
-                <div class="search-select-item" onclick="selectRelatedItem('${type}', ${item.id}, '${item.title.replace(/'/g, "\\'")}', '${item.subtitle.replace(/'/g, "\\'")}', '${contactType}')">
-                    <div class="item-title">${item.title}${badge}</div>
-                    <div class="item-subtitle">${item.subtitle}</div>
+                <div class="search-select-item" onclick="selectRelatedItem('${type}', ${item.id}, '${escapeHtml(item.title).replace(/'/g, "\\'")}', '${escapeHtml(item.subtitle).replace(/'/g, "\\'")}', '${contactType}')">
+                    <div class="item-title">${escapeHtml(item.title)}${badge}</div>
+                    <div class="item-subtitle">${escapeHtml(item.subtitle)}</div>
                 </div>
             `}).join('');
         }
@@ -4994,13 +5003,13 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         const selectedDisplay = document.getElementById('selectedRelatedItem');
         selectedDisplay.innerHTML = `
             <div class="item-info">
-                <div class="item-name" style="display: flex; align-items: center; gap: 8px;">${title}${badge}</div>
-                <div class="item-detail">${subtitle}</div>
+                <div class="item-name" style="display: flex; align-items: center; gap: 8px;">${escapeHtml(title)}${badge}</div>
+                <div class="item-detail">${escapeHtml(subtitle)}</div>
             </div>
             <button type="button" class="remove-btn" onclick="clearRelatedItem()">×</button>
         `;
         selectedDisplay.style.display = 'flex';
-        
+
         // Hide dropdown
         document.getElementById('relatedItemDropdown').classList.remove('show');
     }
@@ -5244,7 +5253,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             html += '<optgroup label="📄 Proposals">';
             proposals.forEach(p => {
                 const agencyName = p.agencyName || agencies.find(a => a.id == p.agency_id)?.name || '';
-                html += `<option value="${p.id}">${p.title}${agencyName ? ' (' + agencyName + ')' : ''}</option>`;
+                html += `<option value="${p.id}">${escapeHtml(p.title)}${agencyName ? ' (' + escapeHtml(agencyName) + ')' : ''}</option>`;
             });
             html += '</optgroup>';
         }
@@ -5515,7 +5524,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 const tooltip = getEventTooltip(event).replace(/"/g, '&quot;');
                 const clickHandler = getEventClickHandler(event);
                 const dblClickHandler = getEventDblClickHandler(event);
-                html += `<div class="day-task ${eventTypeClass}" onclick="event.stopPropagation(); ${clickHandler}" ondblclick="event.stopPropagation(); ${dblClickHandler}" title="${tooltip}">${event.title}</div>`;
+                html += `<div class="day-task ${eventTypeClass}" onclick="event.stopPropagation(); ${clickHandler}" ondblclick="event.stopPropagation(); ${dblClickHandler}" title="${tooltip}">${escapeHtml(event.title)}</div>`;
             });
             
             if (dayEvents.length > maxVisible) {
@@ -5563,7 +5572,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 const dblClickHandler = getEventDblClickHandler(event);
                 const metaInfo = getEventMetaInfo(event);
                 contentHtml += `<div class="week-task ${eventTypeClass}" onclick="event.stopPropagation(); ${clickHandler}" ondblclick="event.stopPropagation(); ${dblClickHandler}" title="${tooltip}">
-                    <div class="week-task-title">${event.title} <span class="event-type-badge ${event.eventType}">${event.eventType}</span></div>
+                    <div class="week-task-title">${escapeHtml(event.title)} <span class="event-type-badge ${event.eventType}">${event.eventType}</span></div>
                     <div class="week-task-meta">${metaInfo}</div>
                 </div>`;
             });
@@ -5617,7 +5626,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 html += `<div class="day-task-item ${eventTypeClass}" onclick="${clickHandler}" ondblclick="${dblClickHandler}" title="${tooltip}">
                     <div class="day-task-time"><span class="event-type-badge ${event.eventType}">${event.eventType}</span></div>
                     <div class="day-task-details">
-                        <h4>${event.title}</h4>
+                        <h4>${escapeHtml(event.title)}</h4>
                         <p>${detailInfo}</p>
                         <div class="day-task-badges">
                             ${badgeInfo}
@@ -5718,7 +5727,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         let options = '<option value="all">👥 All Users</option>';
         users.forEach(u => {
             const displayName = u.display_name || u.username;
-            options += `<option value="${u.id}">${displayName}</option>`;
+            options += `<option value="${u.id}">${escapeHtml(displayName)}</option>`;
         });
         userFilter.innerHTML = options;
     }
@@ -5854,7 +5863,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 filteredContacts = contacts.filter(c => c.owner_user_id == userId);
             }
             filteredContacts.forEach(c => {
-                options += `<option value="${c.id}">${c.firstName} ${c.lastName}</option>`;
+                options += `<option value="${c.id}">${escapeHtml(c.firstName)} ${escapeHtml(c.lastName)}</option>`;
             });
         } else if (viewType === 'opportunity') {
             // Filter opportunities by owner if user is selected
@@ -5863,7 +5872,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 filteredOpportunities = opportunities.filter(o => o.owner_user_id == userId);
             }
             filteredOpportunities.forEach(o => {
-                options += `<option value="${o.id}">${o.title}</option>`;
+                options += `<option value="${o.id}">${escapeHtml(o.title)}</option>`;
             });
         }
         
@@ -6044,8 +6053,8 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                     const selectedDisplay = document.getElementById('selectedRelatedItem');
                     selectedDisplay.innerHTML = `
                         <div class="item-info">
-                            <div class="item-name">${itemName}</div>
-                            <div class="item-detail">${relatedType}</div>
+                            <div class="item-name">${escapeHtml(itemName)}</div>
+                            <div class="item-detail">${escapeHtml(relatedType)}</div>
                         </div>
                         <button type="button" class="remove-btn" onclick="clearRelatedItem()">×</button>
                     `;
@@ -6086,14 +6095,14 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                  ondragstart="handleDragStart(event, ${task.id})"
                  ondragend="handleDragEnd(event)"
                  onclick="editItem('task', ${task.id})">
-                ${task.relatedTo && relatedName ? `<div class="kanban-card-related">${task.relatedTo}: ${relatedName}</div>` : ''}
-                <div class="kanban-card-title">${task.title}</div>
+                ${task.relatedTo && relatedName ? `<div class="kanban-card-related">${escapeHtml(task.relatedTo)}: ${escapeHtml(relatedName)}</div>` : ''}
+                <div class="kanban-card-title">${escapeHtml(task.title)}</div>
                 <div class="kanban-card-meta">
                     ${dueDateBadge}
                     <span class="kanban-card-badge ${priorityClass}">${task.priority || 'Medium'}</span>
-                    ${assignedName ? `<span class="kanban-card-badge assigned">👤 ${assignedName}</span>` : ''}
+                    ${assignedName ? `<span class="kanban-card-badge assigned">👤 ${escapeHtml(assignedName)}</span>` : ''}
                 </div>
-                ${description ? `<div class="kanban-card-description">${description}</div>` : ''}
+                ${description ? `<div class="kanban-card-description">${escapeHtml(description)}</div>` : ''}
             </div>
         `;
     }
@@ -6136,7 +6145,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             const response = await fetch(`${API_URL}?action=saveTask`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({
                     id: task.id,
                     title: task.title,
@@ -6246,10 +6255,10 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             oppContainer.innerHTML = opps.map(opp => `
                 <div class="linked-item opportunity">
                     <div class="linked-item-info">
-                        <div class="linked-item-title">${opp.opportunityTitle || 'Untitled'}</div>
+                        <div class="linked-item-title">${escapeHtml(opp.opportunityTitle || 'Untitled')}</div>
                         <div class="linked-item-meta">
-                            <span class="linked-item-status ${(opp.opportunityStatus || '').toLowerCase()}">${opp.opportunityStatus || 'N/A'}</span>
-                            ${opp.role ? `<span>Role: ${opp.role}</span>` : ''}
+                            <span class="linked-item-status ${(opp.opportunityStatus || '').toLowerCase()}">${escapeHtml(opp.opportunityStatus || 'N/A')}</span>
+                            ${opp.role ? `<span>Role: ${escapeHtml(opp.role)}</span>` : ''}
                         </div>
                     </div>
                     <div class="linked-item-actions">
@@ -6268,10 +6277,10 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             propContainer.innerHTML = props.map(prop => `
                 <div class="linked-item proposal">
                     <div class="linked-item-info">
-                        <div class="linked-item-title">${prop.proposalTitle || 'Untitled'}</div>
+                        <div class="linked-item-title">${escapeHtml(prop.proposalTitle || 'Untitled')}</div>
                         <div class="linked-item-meta">
-                            <span class="linked-item-status ${(prop.proposalStatus || '').toLowerCase().replace(' ', '-')}">${prop.proposalStatus || 'N/A'}</span>
-                            ${prop.role ? `<span>Role: ${prop.role}</span>` : ''}
+                            <span class="linked-item-status ${(prop.proposalStatus || '').toLowerCase().replace(' ', '-')}">${escapeHtml(prop.proposalStatus || 'N/A')}</span>
+                            ${prop.role ? `<span>Role: ${escapeHtml(prop.role)}</span>` : ''}
                         </div>
                     </div>
                     <div class="linked-item-actions">
@@ -6316,27 +6325,27 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         const html = `
             <div class="contact-info-row">
                 <div class="contact-info-label">Email</div>
-                <div class="contact-info-value"><a href="mailto:${contact.email || ''}" style="color: #667eea;">${contact.email || '-'}</a></div>
+                <div class="contact-info-value"><a href="mailto:${escapeHtml(contact.email || '')}" style="color: #667eea;">${escapeHtml(contact.email || '-')}</a></div>
             </div>
             <div class="contact-info-row">
                 <div class="contact-info-label">Phone</div>
-                <div class="contact-info-value">${contact.phone || '-'}</div>
+                <div class="contact-info-value">${escapeHtml(contact.phone || '-')}</div>
             </div>
             <div class="contact-info-row">
                 <div class="contact-info-label">Agency</div>
-                <div class="contact-info-value">${contact.agencyName || '-'}</div>
+                <div class="contact-info-value">${escapeHtml(contact.agencyName || '-')}</div>
             </div>
             <div class="contact-info-row">
                 <div class="contact-info-label">Division</div>
-                <div class="contact-info-value">${contact.division || '-'}</div>
+                <div class="contact-info-value">${escapeHtml(contact.division || '-')}</div>
             </div>
             <div class="contact-info-row">
                 <div class="contact-info-label">Title</div>
-                <div class="contact-info-value">${contact.title || '-'}</div>
+                <div class="contact-info-value">${escapeHtml(contact.title || '-')}</div>
             </div>
             <div class="contact-info-row">
                 <div class="contact-info-label">Owner</div>
-                <div class="contact-info-value"><span class="owner-badge">${contact.ownerUsername || '-'}</span></div>
+                <div class="contact-info-value"><span class="owner-badge">${escapeHtml(contact.ownerUsername || '-')}</span></div>
             </div>
             <div class="contact-info-row">
                 <div class="contact-info-label">Status</div>
@@ -6345,7 +6354,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             ${contact.notes ? `
             <div class="contact-info-row" style="flex-direction: column;">
                 <div class="contact-info-label" style="margin-bottom: 8px;">Notes</div>
-                <div class="contact-info-value" style="white-space: pre-wrap;">${contact.notes}</div>
+                <div class="contact-info-value" style="white-space: pre-wrap;">${escapeHtml(contact.notes)}</div>
             </div>
             ` : ''}
         `;
@@ -6357,7 +6366,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         // Populate user filter
         const userSelect = document.getElementById('noteFilterUser');
         userSelect.innerHTML = '<option value="">All Users</option>' +
-            users.map(u => `<option value="${u.id}">${u.display_name || u.username}</option>`).join('');
+            users.map(u => `<option value="${u.id}">${escapeHtml(u.display_name || u.username)}</option>`).join('');
 
         // Clear other filters
         document.getElementById('noteFilterDateFrom').value = '';
@@ -6421,10 +6430,10 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             <div class="note-card">
                 <div class="note-card-header">
                     <div class="note-meta">
-                        <span class="note-user">${note.createdByUsername || 'Unknown'}</span>
-                        <span class="note-date">${note.displayDate}</span>
+                        <span class="note-user">${escapeHtml(note.createdByUsername || 'Unknown')}</span>
+                        <span class="note-date">${escapeHtml(note.displayDate)}</span>
                         ${note.note_date ? `<span class="note-date-badge">${new Date(note.note_date + 'T00:00:00').toLocaleDateString()}</span>` : ''}
-                        ${note.interaction_type ? `<span class="note-type">${note.interaction_type}</span>` : ''}
+                        ${note.interaction_type ? `<span class="note-type">${escapeHtml(note.interaction_type)}</span>` : ''}
                     </div>
                     ${note.canEdit || note.canDelete ? `
                     <div class="note-actions">
@@ -6493,7 +6502,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             const response = await fetch(`${API_URL}?action=saveContactNote`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify(noteData)
             });
             
@@ -6503,7 +6512,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 closeNoteModal();
                 loadContactNotes();
             } else {
-                showToast('Error saving note: ' + (result.error || 'Unknown error', 'error'));
+                showToast('Error saving note: ' + (result.error || 'Unknown error'), 'error');
             }
         } catch (error) {
             console.error('Error saving note:', error);
@@ -6524,7 +6533,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             if (result.success) {
                 loadContactNotes();
             } else {
-                showToast('Error deleting note: ' + (result.error || 'Unknown error', 'error'));
+                showToast('Error deleting note: ' + (result.error || 'Unknown error'), 'error');
             }
         } catch (error) {
             console.error('Error deleting note:', error);
@@ -6581,9 +6590,9 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         // Sort alphabetically and add options
         [...allDivisionNames].sort((a, b) => a.localeCompare(b)).forEach(name => {
             if (isDatalist) {
-                divisionDatalist.innerHTML += `<option value="${name}">`;
+                divisionDatalist.innerHTML += `<option value="${escapeHtml(name)}">`;
             } else {
-                divisionInput.innerHTML += `<option value="${name}">${name}</option>`;
+                divisionInput.innerHTML += `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`;
             }
         });
         
@@ -6610,17 +6619,17 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         if (coOwnerType === 'user') {
             // Populate with CRM users
             users.forEach(u => {
-                coOwnerSelect.innerHTML += `<option value="${u.id}">👤 ${u.display_name || u.username}</option>`;
+                coOwnerSelect.innerHTML += `<option value="${u.id}">👤 ${escapeHtml(u.display_name || u.username)}</option>`;
             });
         } else if (coOwnerType === 'federal') {
             // Populate with federal contacts (active only)
             contacts.filter(c => c.status === 'Active').forEach(c => {
-                coOwnerSelect.innerHTML += `<option value="${c.id}">🏛️ ${c.firstName} ${c.lastName} - ${c.agencyName || 'No Agency'}</option>`;
+                coOwnerSelect.innerHTML += `<option value="${c.id}">🏛️ ${escapeHtml(c.firstName)} ${escapeHtml(c.lastName)} - ${escapeHtml(c.agencyName || 'No Agency')}</option>`;
             });
         } else if (coOwnerType === 'commercial') {
             // Populate with company/commercial contacts (active only)
             companyContacts.filter(c => c.status === 'Active').forEach(c => {
-                coOwnerSelect.innerHTML += `<option value="${c.id}">🏢 ${c.first_name} ${c.last_name} - ${c.companyName || 'No Company'}</option>`;
+                coOwnerSelect.innerHTML += `<option value="${c.id}">🏢 ${escapeHtml(c.first_name)} ${escapeHtml(c.last_name)} - ${escapeHtml(c.companyName || 'No Company')}</option>`;
             });
         }
     }
@@ -6671,7 +6680,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 workspaceData = data;
                 renderWorkspace();
             } else {
-                showToast('Error loading opportunity: ' + (data.error || 'Unknown error', 'error'));
+                showToast('Error loading opportunity: ' + (data.error || 'Unknown error'), 'error');
                 closeOpportunityWorkspace();
             }
         } catch (error) {
@@ -6878,10 +6887,10 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         
         tbody.innerHTML = qc.map(c => `
             <tr>
-                <td>${c.firstName || ''} ${c.lastName || ''}</td>
-                <td>${c.title || '—'}</td>
-                <td>${c.contact_role || '—'}</td>
-                <td>${c.notes || '—'}</td>
+                <td>${escapeHtml(c.firstName || '')} ${escapeHtml(c.lastName || '')}</td>
+                <td>${escapeHtml(c.title || '—')}</td>
+                <td>${escapeHtml(c.contact_role || '—')}</td>
+                <td>${escapeHtml(c.notes || '—')}</td>
                 <td>
                     <button class="opp-table-btn delete" onclick="deleteQualificationContact(${c.contact_id})">🗑️</button>
                 </td>
@@ -6960,7 +6969,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             const response = await fetch(`${API_URL}?action=saveOpportunityQualification`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify(data)
             });
             const result = await response.json();
@@ -6975,7 +6984,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                     calculateWorkspaceProgress();
                 }
             } else {
-                showToast('Error saving: ' + (result.error || 'Unknown error', 'error'));
+                showToast('Error saving: ' + (result.error || 'Unknown error'), 'error');
             }
         } catch (error) {
             console.error('Error saving qualification:', error);
@@ -7090,21 +7099,21 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         // Build companies dropdown HTML from Company Directory
         const companiesHtml = companies.map(c => {
             const companyName = c.company_name || '';
-            const safeCompanyName = companyName.replace(/'/g, "\\'");
+            const safeCompanyName = escapeHtml(companyName).replace(/'/g, "\\'");
             return `
-            <div class="dropdown-item" data-name="${companyName}" 
+            <div class="dropdown-item" data-name="${escapeHtml(companyName)}"
                 onclick="selectCompetitorCompany('${safeCompanyName}')"
                 style="padding: 10px 15px; cursor: pointer; border-bottom: 1px solid #f0f0f0;">
-                🏢 ${companyName} <span style="color: #6c757d; font-size: 0.85rem;">- ${c.company_type || 'Company'}</span>
+                🏢 ${escapeHtml(companyName)} <span style="color: #6c757d; font-size: 0.85rem;">- ${escapeHtml(c.company_type || 'Company')}</span>
             </div>
         `}).join('');
-        
+
         // Get current competitors for display
         const competitors = workspaceData.competitors || [];
         const assignedListHtml = competitors.length > 0 ? competitors.map(c => `
             <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: #f8f9fa; border-radius: 6px; margin-bottom: 6px;">
                 <div>
-                    <span style="font-weight: 500;">${c.competitor_name || 'Unknown'}</span>
+                    <span style="font-weight: 500;">${escapeHtml(c.competitor_name || 'Unknown')}</span>
                     ${c.is_incumbent ? '<span style="background: #ffc107; color: #000; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; margin-left: 8px;">INCUMBENT</span>' : ''}
                     <span style="color: #6c757d; font-size: 0.85rem; margin-left: 8px;">Pwin: ${c.win_probability || 0}%</span>
                 </div>
@@ -7231,7 +7240,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             const response = await fetch(`${API_URL}?action=saveCompetitor`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify(data)
             });
             const result = await response.json();
@@ -7241,7 +7250,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 renderCompetitors();
                 document.getElementById('competitorModal').style.display = 'none';
             } else {
-                showToast('Error saving competitor: ' + (result.error || 'Unknown error', 'error'));
+                showToast('Error saving competitor: ' + (result.error || 'Unknown error'), 'error');
             }
         } catch (error) {
             console.error('Error saving competitor:', error);
@@ -7264,7 +7273,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             const response = await fetch(`${API_URL}?action=saveCompetitor`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify(data)
             });
             const result = await response.json();
@@ -7292,7 +7301,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             await fetch(`${API_URL}?action=deleteCompetitor`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({ id })
             });
             workspaceData.competitors = workspaceData.competitors.filter(c => c.id != id);
@@ -7313,10 +7322,10 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         
         tbody.innerHTML = partners.map(p => `
             <tr data-id="${p.id}">
-                <td>${p.company_name || p.partner_name || '—'}</td>
-                <td>${p.role || '—'}</td>
-                <td>${p.capability || '—'}</td>
-                <td><span class="status-badge">${p.status || '—'}</span></td>
+                <td>${escapeHtml(p.company_name || p.partner_name || '—')}</td>
+                <td>${escapeHtml(p.role || '—')}</td>
+                <td>${escapeHtml(p.capability || '—')}</td>
+                <td><span class="status-badge">${escapeHtml(p.status || '—')}</span></td>
                 <td>${p.teaming_agreement_date || '—'}</td>
                 <td class="opp-table-actions">
                     <button class="opp-table-btn delete" onclick="deleteTeamingPartner(${p.id})">🗑️</button>
@@ -7329,20 +7338,20 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         // Build companies dropdown HTML from Company Directory
         const companiesHtml = companies.map(c => {
             const companyName = c.company_name || '';
-            const safeCompanyName = companyName.replace(/'/g, "\\'");
+            const safeCompanyName = escapeHtml(companyName).replace(/'/g, "\\'");
             return `
-            <div class="dropdown-item" data-name="${companyName}" 
+            <div class="dropdown-item" data-name="${escapeHtml(companyName)}"
                 onclick="selectTeamingPartnerCompany(${c.id}, '${safeCompanyName}')"
                 style="padding: 10px 15px; cursor: pointer; border-bottom: 1px solid #f0f0f0;">
-                🏢 ${companyName} <span style="color: #6c757d; font-size: 0.85rem;">- ${c.company_type || 'Company'}</span>
+                🏢 ${escapeHtml(companyName)} <span style="color: #6c757d; font-size: 0.85rem;">- ${escapeHtml(c.company_type || 'Company')}</span>
             </div>
         `}).join('');
-        
+
         // Get already assigned partners
         const partners = workspaceData.teaming_partners || [];
         const assignedListHtml = partners.length > 0 ? partners.map(p => `
             <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: #f8f9fa; border-radius: 6px; margin-bottom: 6px;">
-                <span>🏢 ${p.partner_name || p.company_name || 'Unknown'} <span style="color: #6c757d; font-size: 0.85rem;">(${p.role || 'No role'})</span></span>
+                <span>🏢 ${escapeHtml(p.partner_name || p.company_name || 'Unknown')} <span style="color: #6c757d; font-size: 0.85rem;">(${escapeHtml(p.role || 'No role')})</span></span>
                 <button onclick="deleteTeamingPartner(${p.id}); document.getElementById('teamingPartnerModal').style.display='none';" style="background: #dc3545; color: white; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 0.8rem;">Remove</button>
             </div>
         `).join('') : '<div style="color: #6c757d; font-style: italic;">No teaming partners added yet</div>';
@@ -7484,7 +7493,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             const response = await fetch(`${API_URL}?action=saveTeamingPartner`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify(data)
             });
 
@@ -7508,7 +7517,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 renderTeamingPartners();
                 return true;
             } else {
-                showToast('Error saving partner: ' + (result.error || 'Unknown error', 'error'));
+                showToast('Error saving partner: ' + (result.error || 'Unknown error'), 'error');
                 console.error('saveTeamingPartner error:', result);
                 return false;
             }
@@ -7525,7 +7534,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             await fetch(`${API_URL}?action=deleteTeamingPartner`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({ id })
             });
             workspaceData.teaming_partners = workspaceData.teaming_partners.filter(p => p.id != id);
@@ -7577,7 +7586,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             const selectedDisplay = document.getElementById('selectedRelatedItem');
             selectedDisplay.innerHTML = `
                 <div class="item-info">
-                    <div class="item-name">${oppName}</div>
+                    <div class="item-name">${escapeHtml(oppName)}</div>
                     <div class="item-detail">Opportunity</div>
                 </div>
                 <button type="button" class="remove-btn" onclick="clearRelatedItem()">×</button>
@@ -7638,12 +7647,12 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             const assignee = t.assigned_to_name || t.assignedTo || '-';
 
             return `<tr>
-                <td>${t.title}${carryBadge}</td>
-                <td>${assignee}</td>
+                <td>${escapeHtml(t.title)}${carryBadge}</td>
+                <td>${escapeHtml(assignee)}</td>
                 <td>${dueDate}</td>
                 <td><span style="color:${pColor};font-weight:500;">${t.priority || '-'}</span></td>
                 <td><span style="background:${sColor};color:#fff;padding:2px 8px;border-radius:4px;font-size:0.8rem;">${t.status || '-'}</span></td>
-                <td><button class="opp-table-btn" onclick="editWorkspaceTask(${t.id})">Edit</button> <button class="opp-table-btn" style="color:#dc3545;" onclick="deleteWorkspaceTask(${t.id}, '${t.title.replace(/'/g, "\\'")}')">Delete</button></td>
+                <td><button class="opp-table-btn" onclick="editWorkspaceTask(${t.id})">Edit</button> <button class="opp-table-btn" style="color:#dc3545;" onclick="deleteWorkspaceTask(${t.id}, '${escapeHtml(t.title).replace(/'/g, "\\'")}')">Delete</button></td>
             </tr>`;
         }).join('');
     }
@@ -7733,7 +7742,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             const response = await fetch(`${API_URL}?action=saveOpportunityCapture`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify(data)
             });
             const result = await response.json();
@@ -7745,7 +7754,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 }
                 calculateWorkspaceProgress();
             } else {
-                showToast('Error saving: ' + (result.error || 'Unknown error', 'error'));
+                showToast('Error saving: ' + (result.error || 'Unknown error'), 'error');
             }
         } catch (error) {
             console.error('Error saving capture:', error);
@@ -7803,8 +7812,8 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
 
     function populateUserDropdown(elementId, selectedId) {
         const select = document.getElementById(elementId);
-        select.innerHTML = '<option value="">Select...</option>' + 
-            users.map(u => `<option value="${u.id}" ${u.id == selectedId ? 'selected' : ''}>${u.display_name || u.username}</option>`).join('');
+        select.innerHTML = '<option value="">Select...</option>' +
+            users.map(u => `<option value="${u.id}" ${u.id == selectedId ? 'selected' : ''}>${escapeHtml(u.display_name || u.username)}</option>`).join('');
     }
     
     function calculateBidDecisionScore() {
@@ -7884,11 +7893,11 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         
         tbody.innerHTML = risks.map(r => `
             <tr data-id="${r.id}">
-                <td>${r.risk_description || '—'}</td>
-                <td><span class="status-badge">${r.probability || '—'}</span></td>
-                <td><span class="status-badge">${r.impact || '—'}</span></td>
-                <td>${r.mitigation || '—'}</td>
-                <td>${r.owner_name || '—'}</td>
+                <td>${escapeHtml(r.risk_description || '—')}</td>
+                <td><span class="status-badge">${escapeHtml(r.probability || '—')}</span></td>
+                <td><span class="status-badge">${escapeHtml(r.impact || '—')}</span></td>
+                <td>${escapeHtml(r.mitigation || '—')}</td>
+                <td>${escapeHtml(r.owner_name || '—')}</td>
                 <td class="opp-table-actions">
                     <button class="opp-table-btn delete" onclick="deleteRisk(${r.id})">🗑️</button>
                 </td>
@@ -7905,7 +7914,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             return `
             <div style="display: flex; justify-content: space-between; align-items: flex-start; padding: 10px 12px; background: #f8f9fa; border-radius: 6px; margin-bottom: 8px; border-left: 4px solid ${probColor};">
                 <div style="flex: 1;">
-                    <div style="font-weight: 500; margin-bottom: 4px;">${r.risk_description || 'No description'}</div>
+                    <div style="font-weight: 500; margin-bottom: 4px;">${escapeHtml(r.risk_description || 'No description')}</div>
                     <div style="font-size: 0.85rem; color: #6c757d;">
                         <span style="color: ${probColor};">P: ${r.probability || 'N/A'}</span> | 
                         <span style="color: ${impactColor};">I: ${r.impact || 'N/A'}</span> | 
@@ -7918,7 +7927,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         
         // Build users dropdown for risk owner
         const usersHtml = users.map(u => `
-            <option value="${u.id}">${u.display_name || u.username}</option>
+            <option value="${u.id}">${escapeHtml(u.display_name || u.username)}</option>
         `).join('');
         
         const html = `
@@ -8034,7 +8043,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             const response = await fetch(`${API_URL}?action=saveOpportunityRisk`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify(data)
             });
             const result = await response.json();
@@ -8054,7 +8063,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             await fetch(`${API_URL}?action=deleteOpportunityRisk`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({ id })
             });
             workspaceData.risks = workspaceData.risks.filter(r => r.id != id);
@@ -8101,7 +8110,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             const response = await fetch(`${API_URL}?action=saveOpportunityBidDecision`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify(data)
             });
             const result = await response.json();
@@ -8120,7 +8129,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                     await openOpportunityWorkspace(currentWorkspaceOppId);
                 }
             } else {
-                showToast('Error saving: ' + (result.error || 'Unknown error', 'error'));
+                showToast('Error saving: ' + (result.error || 'Unknown error'), 'error');
             }
         } catch (error) {
             console.error('Error saving bid decision:', error);
@@ -8133,7 +8142,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             const response = await fetch(`${API_URL}?action=convertOpportunityToProposal`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({ 
                     opportunity_id: currentWorkspaceOppId,
                     winProbability: 50, // Default value
@@ -8164,7 +8173,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             const response = await fetch(`${API_URL}?action=convertOpportunityToProposal`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({ 
                     opportunity_id: currentWorkspaceOppId,
                     winProbability: 50,
@@ -8179,7 +8188,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 await fetchAllData();
                 closeOpportunityWorkspace();
             } else {
-                showToast('Error: ' + (result.error || 'Failed to convert', 'error'));
+                showToast('Error: ' + (result.error || 'Failed to convert'), 'error');
             }
         } catch (error) {
             console.error('Error converting to proposal:', error);
@@ -8218,12 +8227,12 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             const firstName = c.firstName || '';
             const lastName = c.lastName || '';
             const fullName = `${firstName} ${lastName}`.trim();
-            const safeName = fullName.replace(/'/g, "\\'");
+            const safeName = escapeHtml(fullName).replace(/'/g, "\\'");
             return `
-            <div class="dropdown-item" data-name="${fullName}" 
+            <div class="dropdown-item" data-name="${escapeHtml(fullName)}"
                 onclick="selectQualContact(${c.id}, '${safeName}')"
                 style="padding: 10px 15px; cursor: pointer; border-bottom: 1px solid #f0f0f0;">
-                🏛️ ${fullName} <span style="color: #6c757d; font-size: 0.85rem;">- ${c.agencyName || 'No Agency'}</span>
+                🏛️ ${escapeHtml(fullName)} <span style="color: #6c757d; font-size: 0.85rem;">- ${escapeHtml(c.agencyName || 'No Agency')}</span>
             </div>
         `}).join('');
         
@@ -8235,7 +8244,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             const fullName = `${firstName} ${lastName}`.trim();
             return `
             <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: #f8f9fa; border-radius: 6px; margin-bottom: 6px;">
-                <span>🏛️ ${fullName} <span style="color: #6c757d; font-size: 0.85rem;">(${qc.contact_role || 'No role'})</span></span>
+                <span>🏛️ ${escapeHtml(fullName)} <span style="color: #6c757d; font-size: 0.85rem;">(${escapeHtml(qc.contact_role || 'No role')})</span></span>
                 <button onclick="deleteQualificationContact(${qc.contact_id})" style="background: #dc3545; color: white; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 0.8rem;">Remove</button>
             </div>
         `}).join('') : '<div style="color: #6c757d; font-style: italic;">No contacts assigned yet</div>';
@@ -8348,7 +8357,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             const response = await fetch(`${API_URL}?action=saveQualificationContact`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({
                     opportunity_id: currentWorkspaceOppId,
                     contact_id: contactId,
@@ -8376,7 +8385,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                     renderQualificationContacts();
                 }
             } else {
-                showToast('Error adding contact: ' + (result.error || 'Unknown error', 'error'));
+                showToast('Error adding contact: ' + (result.error || 'Unknown error'), 'error');
             }
         } catch (error) {
             console.error('Error saving contact:', error);
@@ -8390,7 +8399,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             await fetch(`${API_URL}?action=deleteQualificationContact`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({
                     opportunity_id: currentWorkspaceOppId,
                     contact_id: contactId
@@ -8509,29 +8518,29 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         if (opp.co_owner_contact_type && opp.coOwnerDisplayName) {
             const typeIcon = opp.co_owner_contact_type === 'user' ? '👤' : opp.co_owner_contact_type === 'federal' ? '🏛️' : '🏢';
             const typeTitle = opp.co_owner_contact_type === 'user' ? 'User' : opp.co_owner_contact_type === 'federal' ? 'Federal Contact' : 'Commercial Contact';
-            coOwnerHtml = `<span class="owner-badge" title="${typeTitle}">${typeIcon} ${opp.coOwnerDisplayName}</span>`;
+            coOwnerHtml = `<span class="owner-badge" title="${typeTitle}">${typeIcon} ${escapeHtml(opp.coOwnerDisplayName)}</span>`;
         }
-        
+
         // Build assigned users HTML
         let assignedUsersHtml = '<span style="color: #6c757d;">None assigned</span>';
         if (opp.assignedUsers && opp.assignedUsers.length > 0) {
             assignedUsersHtml = opp.assignedUsers.map(u => `
-                <span class="assigned-chip">👤 ${u.display_name || u.username}</span>
+                <span class="assigned-chip">👤 ${escapeHtml(u.display_name || u.username)}</span>
             `).join('');
         }
-        
+
         // Build assigned contacts HTML (supports both federal and commercial)
         let assignedContactsHtml = '<span style="color: #6c757d;">None assigned</span>';
         if (opp.assignedContacts && opp.assignedContacts.length > 0) {
             assignedContactsHtml = opp.assignedContacts.map(c => {
                 const isFederal = c.contact_type === 'federal' || !c.contact_type;
                 const icon = isFederal ? '🏛️' : '🏢';
-                const clickHandler = isFederal 
+                const clickHandler = isFederal
                     ? `closeOpportunityPanel(); setTimeout(() => openContactPanel(${c.contact_id}), 300);`
                     : `closeOpportunityPanel(); setTimeout(() => openCompanyContactPanel(${c.contact_id}), 300);`;
                 return `
                 <span class="assigned-chip" style="cursor: pointer;" onclick="${clickHandler}">
-                    ${icon} ${c.firstName} ${c.lastName}
+                    ${icon} ${escapeHtml(c.firstName)} ${escapeHtml(c.lastName)}
                 </span>
             `}).join('');
         }
@@ -8539,19 +8548,19 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         const html = `
             <div class="contact-info-row">
                 <div class="contact-info-label">Title</div>
-                <div class="contact-info-value">${opp.title || '-'}</div>
+                <div class="contact-info-value">${escapeHtml(opp.title || '-')}</div>
             </div>
             <div class="contact-info-row">
                 <div class="contact-info-label">Agency</div>
-                <div class="contact-info-value">${opp.agencyName || '-'}</div>
+                <div class="contact-info-value">${escapeHtml(opp.agencyName || '-')}</div>
             </div>
             <div class="contact-info-row">
                 <div class="contact-info-label">Division</div>
-                <div class="contact-info-value">${opp.division || '-'}</div>
+                <div class="contact-info-value">${escapeHtml(opp.division || '-')}</div>
             </div>
             <div class="contact-info-row">
                 <div class="contact-info-label">Owner</div>
-                <div class="contact-info-value"><span class="owner-badge">👤 ${ownerName}</span></div>
+                <div class="contact-info-value"><span class="owner-badge">👤 ${escapeHtml(ownerName)}</span></div>
             </div>
             <div class="contact-info-row">
                 <div class="contact-info-label">Co-Owner</div>
@@ -8576,7 +8585,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             ${opp.description ? `
             <div class="contact-info-row" style="flex-direction: column;">
                 <div class="contact-info-label" style="margin-bottom: 8px;">Description</div>
-                <div class="contact-info-value" style="white-space: pre-wrap;">${opp.description}</div>
+                <div class="contact-info-value" style="white-space: pre-wrap;">${escapeHtml(opp.description)}</div>
             </div>
             ` : ''}
             
@@ -8624,9 +8633,9 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
     
     function populateOppNoteFilters() {
         const userSelect = document.getElementById('oppNoteFilterUser');
-        userSelect.innerHTML = '<option value="">All Users</option>' + 
-            users.map(u => `<option value="${u.id}">${u.display_name || u.username}</option>`).join('');
-        
+        userSelect.innerHTML = '<option value="">All Users</option>' +
+            users.map(u => `<option value="${u.id}">${escapeHtml(u.display_name || u.username)}</option>`).join('');
+
         document.getElementById('oppNoteFilterDateFrom').value = '';
         document.getElementById('oppNoteFilterDateTo').value = '';
         document.getElementById('oppNoteFilterType').value = '';
@@ -8685,10 +8694,10 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             <div class="note-card">
                 <div class="note-card-header">
                     <div class="note-meta">
-                        <span class="note-user">${note.createdByUsername || 'Unknown'}</span>
-                        <span class="note-date">${note.displayDate}</span>
+                        <span class="note-user">${escapeHtml(note.createdByUsername || 'Unknown')}</span>
+                        <span class="note-date">${escapeHtml(note.displayDate)}</span>
                         ${note.note_date ? `<span class="note-date-badge">${new Date(note.note_date + 'T00:00:00').toLocaleDateString()}</span>` : ''}
-                        ${note.interaction_type ? `<span class="note-type">${note.interaction_type}</span>` : ''}
+                        ${note.interaction_type ? `<span class="note-type">${escapeHtml(note.interaction_type)}</span>` : ''}
                     </div>
                     ${note.canEdit || note.canDelete ? `
                     <div class="note-actions">
@@ -8750,7 +8759,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             const response = await fetch(`${API_URL}?action=saveOpportunityNote`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify(noteData)
             });
             
@@ -8760,7 +8769,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 closeOppNoteModal();
                 loadOpportunityNotes();
             } else {
-                showToast('Error saving note: ' + (result.error || 'Unknown error', 'error'));
+                showToast('Error saving note: ' + (result.error || 'Unknown error'), 'error');
             }
         } catch (error) {
             console.error('Error saving note:', error);
@@ -8781,7 +8790,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             if (result.success) {
                 loadOpportunityNotes();
             } else {
-                showToast('Error deleting note: ' + (result.error || 'Unknown error', 'error'));
+                showToast('Error deleting note: ' + (result.error || 'Unknown error'), 'error');
             }
         } catch (error) {
             console.error('Error deleting note:', error);
@@ -8822,10 +8831,10 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                         oninput="filterAssignUserDropdown()" onfocus="showAssignUserDropdown()">
                     <div id="assignUserDropdown" class="search-dropdown" style="display: none; position: absolute; top: 100%; left: 0; right: 0; max-height: 200px; overflow-y: auto; background: white; border: 2px solid #e1e5e9; border-top: none; border-radius: 0 0 8px 8px; z-index: 1000;">
                         ${users.map(u => `
-                            <div class="dropdown-item" data-id="${u.id}" data-name="${u.display_name || u.username}" 
-                                onclick="selectAssignUser(${u.id}, '${(u.display_name || u.username).replace(/'/g, "\\'")}')"
+                            <div class="dropdown-item" data-id="${u.id}" data-name="${escapeHtml(u.display_name || u.username)}"
+                                onclick="selectAssignUser(${u.id}, '${escapeHtml(u.display_name || u.username).replace(/'/g, "\\'")}')"
                                 style="padding: 10px 15px; cursor: pointer; border-bottom: 1px solid #f0f0f0;">
-                                👤 ${u.display_name || u.username}
+                                👤 ${escapeHtml(u.display_name || u.username)}
                             </div>
                         `).join('')}
                     </div>
@@ -8868,8 +8877,8 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 return `
                 <div class="assigned-item" style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #f8f9fa; border-radius: 6px; margin-bottom: 8px;">
                     <div>
-                        <span>${icon} ${c.firstName} ${c.lastName}</span>
-                        <span style="color: #6c757d; font-size: 0.85rem;"> - ${subtext}</span>
+                        <span>${icon} ${escapeHtml(c.firstName)} ${escapeHtml(c.lastName)}</span>
+                        <span style="color: #6c757d; font-size: 0.85rem;"> - ${escapeHtml(subtext)}</span>
                     </div>
                     <button class="action-btn delete" onclick="removeAssignedContact(${c.contact_id}, '${c.contact_type || 'federal'}')" title="Remove" style="padding: 4px 8px;">✕</button>
                 </div>
@@ -8878,18 +8887,18 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         
         // Build combined contact list (federal + commercial)
         const federalContactsHtml = contacts.filter(c => c.status === 'Active').map(c => `
-            <div class="dropdown-item" data-id="${c.id}" data-type="federal" data-name="${c.firstName} ${c.lastName}" 
-                onclick="selectAssignContact(${c.id}, 'federal', '${(c.firstName + ' ' + c.lastName).replace(/'/g, "\\'")}')"
+            <div class="dropdown-item" data-id="${c.id}" data-type="federal" data-name="${escapeHtml(c.firstName)} ${escapeHtml(c.lastName)}"
+                onclick="selectAssignContact(${c.id}, 'federal', '${escapeHtml(c.firstName + ' ' + c.lastName).replace(/'/g, "\\'")}')"
                 style="padding: 10px 15px; cursor: pointer; border-bottom: 1px solid #f0f0f0;">
-                🏛️ ${c.firstName} ${c.lastName} <span style="color: #6c757d; font-size: 0.85rem;">- ${c.agencyName || 'No Agency'}</span>
+                🏛️ ${escapeHtml(c.firstName)} ${escapeHtml(c.lastName)} <span style="color: #6c757d; font-size: 0.85rem;">- ${escapeHtml(c.agencyName || 'No Agency')}</span>
             </div>
         `).join('');
-        
+
         const commercialContactsHtml = companyContacts.filter(c => c.status === 'Active').map(c => `
-            <div class="dropdown-item" data-id="${c.id}" data-type="commercial" data-name="${c.first_name} ${c.last_name}" 
-                onclick="selectAssignContact(${c.id}, 'commercial', '${(c.first_name + ' ' + c.last_name).replace(/'/g, "\\'")}')"
+            <div class="dropdown-item" data-id="${c.id}" data-type="commercial" data-name="${escapeHtml(c.first_name)} ${escapeHtml(c.last_name)}"
+                onclick="selectAssignContact(${c.id}, 'commercial', '${escapeHtml(c.first_name + ' ' + c.last_name).replace(/'/g, "\\'")}')"
                 style="padding: 10px 15px; cursor: pointer; border-bottom: 1px solid #f0f0f0;">
-                🏢 ${c.first_name} ${c.last_name} <span style="color: #6c757d; font-size: 0.85rem;">- ${c.companyName || 'No Company'}</span>
+                🏢 ${escapeHtml(c.first_name)} ${escapeHtml(c.last_name)} <span style="color: #6c757d; font-size: 0.85rem;">- ${escapeHtml(c.companyName || 'No Company')}</span>
             </div>
         `).join('');
         
@@ -9023,7 +9032,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             const response = await fetch(`${API_URL}?action=saveOpportunityAssignments`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({
                     opportunity_id: currentOpportunityId,
                     user_ids: newUserIds
@@ -9037,7 +9046,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 // Refresh the modal
                 openAssignUsersModal();
             } else {
-                showToast('Error adding user: ' + (result.error || 'Unknown error', 'error'));
+                showToast('Error adding user: ' + (result.error || 'Unknown error'), 'error');
             }
         } catch (error) {
             console.error('Error adding user:', error);
@@ -9054,7 +9063,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             const response = await fetch(`${API_URL}?action=saveOpportunityAssignments`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({
                     opportunity_id: currentOpportunityId,
                     user_ids: newUserIds
@@ -9068,7 +9077,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 // Refresh the modal
                 openAssignUsersModal();
             } else {
-                showToast('Error removing user: ' + (result.error || 'Unknown error', 'error'));
+                showToast('Error removing user: ' + (result.error || 'Unknown error'), 'error');
             }
         } catch (error) {
             console.error('Error removing user:', error);
@@ -9101,7 +9110,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             const response = await fetch(`${API_URL}?action=saveOpportunityAssignments`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({
                     opportunity_id: currentOpportunityId,
                     contacts: newContacts
@@ -9115,7 +9124,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 // Refresh the modal
                 openAssignContactsModal();
             } else {
-                showToast('Error adding contact: ' + (result.error || 'Unknown error', 'error'));
+                showToast('Error adding contact: ' + (result.error || 'Unknown error'), 'error');
             }
         } catch (error) {
             console.error('Error adding contact:', error);
@@ -9135,7 +9144,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             const response = await fetch(`${API_URL}?action=saveOpportunityAssignments`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({
                     opportunity_id: currentOpportunityId,
                     contacts: newContacts
@@ -9149,7 +9158,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 // Refresh the modal
                 openAssignContactsModal();
             } else {
-                showToast('Error removing contact: ' + (result.error || 'Unknown error', 'error'));
+                showToast('Error removing contact: ' + (result.error || 'Unknown error'), 'error');
             }
         } catch (error) {
             console.error('Error removing contact:', error);
@@ -9171,7 +9180,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             const response = await fetch(`${API_URL}?action=saveOpportunityAssignments`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({
                     opportunity_id: currentOpportunityId,
                     user_ids: userIds
@@ -9184,7 +9193,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 document.getElementById('assignModal').style.display = 'none';
                 await loadOpportunityDetails(currentOpportunityId);
             } else {
-                showToast('Error saving assignments: ' + (result.error || 'Unknown error', 'error'));
+                showToast('Error saving assignments: ' + (result.error || 'Unknown error'), 'error');
             }
         } catch (error) {
             console.error('Error saving assignments:', error);
@@ -9198,7 +9207,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             const response = await fetch(`${API_URL}?action=saveOpportunityAssignments`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({
                     opportunity_id: currentOpportunityId,
                     contact_ids: contactIds
@@ -9211,7 +9220,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 document.getElementById('assignModal').style.display = 'none';
                 await loadOpportunityDetails(currentOpportunityId);
             } else {
-                showToast('Error saving assignments: ' + (result.error || 'Unknown error', 'error'));
+                showToast('Error saving assignments: ' + (result.error || 'Unknown error'), 'error');
             }
         } catch (error) {
             console.error('Error saving assignments:', error);
@@ -9532,7 +9541,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             const response = await fetch(`${API_URL}?action=saveProposalNote`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify(noteData)
             });
             
@@ -9542,7 +9551,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 closePropNoteModal();
                 loadProposalNotes();
             } else {
-                showToast('Error saving note: ' + (result.error || 'Unknown error', 'error'));
+                showToast('Error saving note: ' + (result.error || 'Unknown error'), 'error');
             }
         } catch (error) {
             console.error('Error saving note:', error);
@@ -9563,7 +9572,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             if (result.success) {
                 loadProposalNotes();
             } else {
-                showToast('Error deleting note: ' + (result.error || 'Unknown error', 'error'));
+                showToast('Error deleting note: ' + (result.error || 'Unknown error'), 'error');
             }
         } catch (error) {
             console.error('Error deleting note:', error);
@@ -9606,9 +9615,9 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             <input type="text" id="propContactSearchAssign" placeholder="Search contacts..." style="width: 100%; box-sizing: border-box; padding: 10px; margin-bottom: 10px; border: 2px solid #e1e5e9; border-radius: 8px;" oninput="filterAssignPropContacts()">
             <div id="propContactItems">
                 ${contacts.filter(c => c.status === 'Active').map(c => `
-                    <label class="assign-prop-contact-item" data-name="${(c.firstName + ' ' + c.lastName).toLowerCase()}" style="display: flex; align-items: center; padding: 10px; cursor: pointer; border-bottom: 1px solid #f0f0f0;">
-                        <input type="checkbox" class="assign-prop-contact-checkbox" value="${c.id}" ${assignedContactIds.includes(c.id) ? 'checked' : ''} style="margin-right: 10px;">
-                        <span>👤 ${c.firstName} ${c.lastName} <span style="color: #6c757d; font-size: 0.85rem;">- ${c.agencyName || 'No Agency'}</span></span>
+                    <label class="assign-prop-contact-item" data-name="${escapeHtml((c.firstName + ' ' + c.lastName).toLowerCase())}" style="display: flex; align-items: center; padding: 10px; cursor: pointer; border-bottom: 1px solid #f0f0f0;">
+                        <input type="checkbox" class="assign-prop-contact-checkbox" value="${parseInt(c.id)}" ${assignedContactIds.includes(c.id) ? 'checked' : ''} style="margin-right: 10px;">
+                        <span>👤 ${escapeHtml(c.firstName)} ${escapeHtml(c.lastName)} <span style="color: #6c757d; font-size: 0.85rem;">- ${escapeHtml(c.agencyName) || 'No Agency'}</span></span>
                     </label>
                 `).join('')}
             </div>
@@ -9635,7 +9644,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             const response = await fetch(`${API_URL}?action=saveProposalAssignments`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({
                     proposal_id: currentProposalId,
                     user_ids: userIds
@@ -9648,7 +9657,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 closeAssignPropUsersModal();
                 await loadProposalDetails(currentProposalId);
             } else {
-                showToast('Error saving assignments: ' + (result.error || 'Unknown error', 'error'));
+                showToast('Error saving assignments: ' + (result.error || 'Unknown error'), 'error');
             }
         } catch (error) {
             console.error('Error saving assignments:', error);
@@ -9662,7 +9671,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             const response = await fetch(`${API_URL}?action=saveProposalAssignments`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({
                     proposal_id: currentProposalId,
                     contact_ids: contactIds
@@ -9675,7 +9684,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 closeAssignPropContactsModal();
                 await loadProposalDetails(currentProposalId);
             } else {
-                showToast('Error saving assignments: ' + (result.error || 'Unknown error', 'error'));
+                showToast('Error saving assignments: ' + (result.error || 'Unknown error'), 'error');
             }
         } catch (error) {
             console.error('Error saving assignments:', error);
@@ -9938,7 +9947,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             await fetch(`${API_URL}?action=unlinkTask`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({ task_id: taskId })
             });
             
@@ -10376,7 +10385,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             try {
                 const response = await fetch(`${API_URL}?action=saveEventNote`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                     body: JSON.stringify(noteData)
                 });
                 
@@ -10385,7 +10394,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                     closeModal('addEventNoteInModalDialog');
                     loadEventNotesForModal(eventId);
                 } else {
-                    showToast('Error saving note: ' + (result.error || 'Unknown error', 'error'));
+                    showToast('Error saving note: ' + (result.error || 'Unknown error'), 'error');
                 }
             } catch (error) {
                 console.error('Error saving note:', error);
@@ -10441,7 +10450,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             for (const note of newNotes) {
                 await fetch(`${API_URL}?action=saveEventNote`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                     body: JSON.stringify({
                         event_id: eventId,
                         interaction_type: note.interaction_type,
@@ -10955,7 +10964,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             try {
                 await fetch(`${API_URL}?action=saveTask`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                     body: JSON.stringify({
                         title: title,
                         status: document.getElementById('newEventTaskStatus').value,
@@ -11092,7 +11101,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             const response = await fetch(`${API_URL}?action=saveEventAssignments`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({
                     event_id: eventId,
                     user_ids: userIds,
@@ -11107,7 +11116,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 loadEventAssignedPeople(eventId);
                 await fetchAllData(); // Refresh to update people counts
             } else {
-                showToast('Error saving assignments: ' + (result.error || 'Unknown error', 'error'));
+                showToast('Error saving assignments: ' + (result.error || 'Unknown error'), 'error');
             }
         } catch (error) {
             console.error('Error saving assignments:', error);
@@ -11136,7 +11145,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             const response = await fetch(`${API_URL}?action=saveEvent`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify(eventData)
             });
             
@@ -11157,7 +11166,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 await fetchAllData();
                 populateEventsTable();
             } else {
-                showToast('Error saving event: ' + (result.error || 'Unknown error', 'error'));
+                showToast('Error saving event: ' + (result.error || 'Unknown error'), 'error');
             }
         } catch (error) {
             console.error('Error saving event:', error);
@@ -11170,7 +11179,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             await fetch(`${API_URL}?action=saveEventAssignments`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({
                     event_id: eventId,
                     user_ids: pendingEventAttendees.users.map(u => u.id),
@@ -11191,7 +11200,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                     // Create new task linked to event
                     await fetch(`${API_URL}?action=saveTask`, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                         body: JSON.stringify({
                             title: task.title,
                             status: task.status,
@@ -11207,7 +11216,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                     // Update existing task to link to this event
                     await fetch(`${API_URL}?action=linkTaskToEvent`, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                         body: JSON.stringify({
                             task_id: task.id,
                             event_id: eventId
@@ -11227,7 +11236,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             const response = await fetch(`${API_URL}?action=archiveEvent`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({ id: id })
             });
             
@@ -11237,7 +11246,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 await fetchAllData();
                 populateEventsTable();
             } else {
-                showToast('Error archiving event: ' + (result.error || 'Unknown error', 'error'));
+                showToast('Error archiving event: ' + (result.error || 'Unknown error'), 'error');
             }
         } catch (error) {
             console.error('Error archiving event:', error);
@@ -11291,6 +11300,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             const response = await fetch(`${API_URL}?action=uploadEventDocument`, {
                 method: 'POST',
+                headers: csrfHeaders(),
                 body: formData
             });
             
@@ -11299,7 +11309,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 fileInput.value = '';
                 loadEventDocuments(eventId);
             } else {
-                showToast('Error uploading document: ' + (result.error || 'Unknown error', 'error'));
+                showToast('Error uploading document: ' + (result.error || 'Unknown error'), 'error');
             }
         } catch (error) {
             console.error('Error uploading document:', error);
@@ -11315,7 +11325,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             const response = await fetch(`${API_URL}?action=deleteEventDocument`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({ id: docId })
             });
             
@@ -11323,7 +11333,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             if (result.success) {
                 loadEventDocuments(eventId);
             } else {
-                showToast('Error deleting document: ' + (result.error || 'Unknown error', 'error'));
+                showToast('Error deleting document: ' + (result.error || 'Unknown error'), 'error');
             }
         } catch (error) {
             console.error('Error deleting document:', error);
@@ -11588,6 +11598,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             const response = await fetch(`${API_URL}?action=uploadEventDocument`, {
                 method: 'POST',
+                headers: csrfHeaders(),
                 body: formData
             });
             
@@ -11596,7 +11607,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 fileInput.value = '';
                 loadEventPanelDocuments(eventId);
             } else {
-                showToast('Error uploading document: ' + (result.error || 'Unknown error', 'error'));
+                showToast('Error uploading document: ' + (result.error || 'Unknown error'), 'error');
             }
         } catch (error) {
             console.error('Error uploading document:', error);
@@ -11610,7 +11621,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             const response = await fetch(`${API_URL}?action=deleteEventDocument`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({ id: docId })
             });
             
@@ -11618,7 +11629,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             if (result.success) {
                 loadEventPanelDocuments(eventId);
             } else {
-                showToast('Error deleting document: ' + (result.error || 'Unknown error', 'error'));
+                showToast('Error deleting document: ' + (result.error || 'Unknown error'), 'error');
             }
         } catch (error) {
             console.error('Error deleting document:', error);
@@ -11740,7 +11751,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             const response = await fetch(`${API_URL}?action=saveEventNote`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify(noteData)
             });
             
@@ -11749,7 +11760,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 closeEventNoteModal();
                 loadEventNotes();
             } else {
-                showToast('Error saving note: ' + (result.error || 'Unknown error', 'error'));
+                showToast('Error saving note: ' + (result.error || 'Unknown error'), 'error');
             }
         } catch (error) {
             console.error('Error saving note:', error);
@@ -11767,7 +11778,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             if (result.success) {
                 loadEventNotes();
             } else {
-                showToast('Error deleting note: ' + (result.error || 'Unknown error', 'error'));
+                showToast('Error deleting note: ' + (result.error || 'Unknown error'), 'error');
             }
         } catch (error) {
             console.error('Error deleting note:', error);
@@ -12291,7 +12302,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             const response = await fetch(`${API_URL}?action=${action}`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify(body)
             });
             
@@ -12302,7 +12313,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 pendingRecurringAction = null;
                 loadDeptEvents();
             } else {
-                showToast('Error saving event: ' + (result.error || 'Unknown error', 'error'));
+                showToast('Error saving event: ' + (result.error || 'Unknown error'), 'error');
             }
         } catch (error) {
             console.error('Error saving event:', error);
@@ -12333,7 +12344,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 closeDeptEventModal();
                 loadDeptEvents();
             } else {
-                showToast('Error deleting event: ' + (result.error || 'Unknown error', 'error'));
+                showToast('Error deleting event: ' + (result.error || 'Unknown error'), 'error');
             }
         } catch (error) {
             console.error('Error deleting event:', error);
@@ -12352,7 +12363,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             try {
                 const response = await fetch(`${API_URL}?action=deleteDeptEventInstance`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                     body: JSON.stringify({ parent_event_id: parentId, original_date: originalDate })
                 });
                 
@@ -12361,7 +12372,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                     closeDeptEventModal();
                     loadDeptEvents();
                 } else {
-                    showToast('Error deleting instance: ' + (result.error || 'Unknown error', 'error'));
+                    showToast('Error deleting instance: ' + (result.error || 'Unknown error'), 'error');
                 }
             } catch (error) {
                 console.error('Error deleting instance:', error);
@@ -12614,7 +12625,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         document.getElementById('parentCompanyDropdown').style.display = 'none';
         document.getElementById('selectedParentCompany').style.display = 'block';
         document.getElementById('selectedParentCompany').innerHTML = `
-            <span>${name}</span>
+            <span>${escapeHtml(name)}</span>
             <button type="button" onclick="clearParentCompany()" style="background: none; border: none; cursor: pointer; color: #dc3545;">&times;</button>
         `;
     }
@@ -12632,7 +12643,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             const response = await fetch(`${API_URL}?action=saveCompany`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({ company_name: newCompanyName, status: 'Active' })
             });
             const data = await response.json();
@@ -12645,7 +12656,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 document.getElementById('parentCompanyPrompt').style.display = 'none';
                 showToast(`Company "${newCompanyName}" created successfully!`, 'success');
             } else {
-                showToast('Error creating company: ' + (data.error || 'Unknown error', 'error'));
+                showToast('Error creating company: ' + (data.error || 'Unknown error'), 'error');
             }
         } catch (error) {
             console.error('Error creating parent company:', error);
@@ -12828,7 +12839,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             const response = await fetch(`${API_URL}?action=saveCompany`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify(companyData)
             });
             const data = await response.json();
@@ -12837,7 +12848,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 closeModal('companyModal');
                 await fetchAllData();
             } else {
-                showToast('Error saving company: ' + (data.error || 'Unknown error', 'error'));
+                showToast('Error saving company: ' + (data.error || 'Unknown error'), 'error');
             }
         } catch (error) {
             console.error('Error saving company:', error);
@@ -12957,7 +12968,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         document.getElementById('ccCompanyPrompt').style.display = 'none';
         document.getElementById('selectedCCCompany').style.display = 'block';
         document.getElementById('selectedCCCompany').innerHTML = `
-            <span>${name}</span>
+            <span>${escapeHtml(name)}</span>
             <button type="button" onclick="clearCCCompany()" style="background: none; border: none; cursor: pointer; color: #dc3545;">&times;</button>
         `;
     }
@@ -12976,7 +12987,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             const response = await fetch(`${API_URL}?action=saveCompany`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({ company_name: newCompanyName, status: 'Active' })
             });
             const data = await response.json();
@@ -12988,7 +12999,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 selectCCCompany(data.id, newCompanyName);
                 showToast(`Company "${newCompanyName}" created successfully!`, 'success');
             } else {
-                showToast('Error creating company: ' + (data.error || 'Unknown error', 'error'));
+                showToast('Error creating company: ' + (data.error || 'Unknown error'), 'error');
             }
         } catch (error) {
             console.error('Error creating company:', error);
@@ -13183,7 +13194,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             const response = await fetch(`${API_URL}?action=saveCompanyContact`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify(contactData)
             });
             const data = await response.json();
@@ -13192,7 +13203,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 closeModal('companyContactModal');
                 await fetchAllData();
             } else {
-                showToast('Error saving contact: ' + (data.error || 'Unknown error', 'error'));
+                showToast('Error saving contact: ' + (data.error || 'Unknown error'), 'error');
             }
         } catch (error) {
             console.error('Error saving company contact:', error);
@@ -13338,7 +13349,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         document.getElementById('ccInfoSection').innerHTML = `
             <div class="contact-info-row">
                 <div class="contact-info-label">Company</div>
-                <div class="contact-info-value">${contact.companyName || '—'}</div>
+                <div class="contact-info-value">${escapeHtml(contact.companyName) || '—'}</div>
             </div>
             <div class="contact-info-row">
                 <div class="contact-info-label">Primary Owner</div>
@@ -13350,23 +13361,23 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             </div>
             <div class="contact-info-row">
                 <div class="contact-info-label">Functional Role</div>
-                <div class="contact-info-value">${contact.functional_role || '—'}</div>
+                <div class="contact-info-value">${escapeHtml(contact.functional_role) || '—'}</div>
             </div>
             <div class="contact-info-row">
                 <div class="contact-info-label">Capture Role</div>
-                <div class="contact-info-value">${contact.capture_role || '—'}</div>
+                <div class="contact-info-value">${escapeHtml(contact.capture_role) || '—'}</div>
             </div>
             <div class="contact-info-row">
                 <div class="contact-info-label">Email</div>
-                <div class="contact-info-value">${contact.email ? `<a href="mailto:${contact.email}">${contact.email}</a>` : '—'}</div>
+                <div class="contact-info-value">${contact.email ? `<a href="mailto:${escapeHtml(contact.email)}">${escapeHtml(contact.email)}</a>` : '—'}</div>
             </div>
             <div class="contact-info-row">
                 <div class="contact-info-label">Phone</div>
-                <div class="contact-info-value">${contact.phone ? `<a href="tel:${contact.phone}">${contact.phone}</a>` : '—'}</div>
+                <div class="contact-info-value">${contact.phone ? `<a href="tel:${escapeHtml(contact.phone)}">${escapeHtml(contact.phone)}</a>` : '—'}</div>
             </div>
             <div class="contact-info-row">
                 <div class="contact-info-label">Status</div>
-                <div class="contact-info-value"><span class="status-badge status-${(contact.status || 'active').toLowerCase()}">${contact.status || 'Active'}</span></div>
+                <div class="contact-info-value"><span class="status-badge status-${escapeHtml((contact.status || 'active').toLowerCase())}">${escapeHtml(contact.status) || 'Active'}</span></div>
             </div>
             <div class="contact-info-row">
                 <div class="contact-info-label">Agencies Supported</div>
@@ -13375,7 +13386,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             ${contact.notes ? `
             <div class="contact-info-row">
                 <div class="contact-info-label">Notes</div>
-                <div class="contact-info-value">${contact.notes}</div>
+                <div class="contact-info-value">${escapeHtml(contact.notes)}</div>
             </div>
             ` : ''}
         `;
@@ -13472,23 +13483,23 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             <div class="company-panel-section-title">📋 Basic Information</div>
             <div class="contact-info-row">
                 <div class="contact-info-label">Company Name</div>
-                <div class="contact-info-value">${company.company_name || '—'}</div>
+                <div class="contact-info-value">${escapeHtml(company.company_name) || '—'}</div>
             </div>
             <div class="contact-info-row">
                 <div class="contact-info-label">Type</div>
-                <div class="contact-info-value">${company.company_type || '—'}</div>
+                <div class="contact-info-value">${escapeHtml(company.company_type) || '—'}</div>
             </div>
             <div class="contact-info-row">
                 <div class="contact-info-label">Parent Company</div>
-                <div class="contact-info-value">${company.parentCompanyName || '—'}</div>
+                <div class="contact-info-value">${escapeHtml(company.parentCompanyName) || '—'}</div>
             </div>
             <div class="contact-info-row">
                 <div class="contact-info-label">Website</div>
-                <div class="contact-info-value">${company.website ? `<a href="${company.website}" target="_blank">${company.website}</a>` : '—'}</div>
+                <div class="contact-info-value">${company.website ? `<a href="${escapeHtml(company.website)}" target="_blank">${escapeHtml(company.website)}</a>` : '—'}</div>
             </div>
             <div class="contact-info-row">
                 <div class="contact-info-label">Status</div>
-                <div class="contact-info-value"><span class="status-badge status-${(company.status || 'active').toLowerCase()}">${company.status || 'Active'}</span></div>
+                <div class="contact-info-value"><span class="status-badge status-${escapeHtml((company.status || 'active').toLowerCase())}">${escapeHtml(company.status) || 'Active'}</span></div>
             </div>
             
             <div class="company-panel-section-title" style="margin-top: 20px;">🎯 Strategic Profile</div>
@@ -13516,22 +13527,22 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             </div>
             <div class="contact-info-row">
                 <div class="contact-info-label">Primary NAICS</div>
-                <div class="contact-info-value">${company.primary_naics_codes || '—'}</div>
+                <div class="contact-info-value">${escapeHtml(company.primary_naics_codes) || '—'}</div>
             </div>
             
             <div class="company-panel-section-title" style="margin-top: 20px;">🔑 Identifiers</div>
             <div class="contact-info-row">
                 <div class="contact-info-label">UEI</div>
-                <div class="contact-info-value">${company.uei || '—'}</div>
+                <div class="contact-info-value">${escapeHtml(company.uei) || '—'}</div>
             </div>
             <div class="contact-info-row">
                 <div class="contact-info-label">CAGE Code</div>
-                <div class="contact-info-value">${company.cage_code || '—'}</div>
+                <div class="contact-info-value">${escapeHtml(company.cage_code) || '—'}</div>
             </div>
-            
+
             ${company.description ? `
             <div class="company-panel-section-title" style="margin-top: 20px;">📝 Description</div>
-            <div style="padding: 10px 0; color: #333; line-height: 1.5;">${company.description}</div>
+            <div style="padding: 10px 0; color: #333; line-height: 1.5;">${escapeHtml(company.description)}</div>
             ` : ''}
         `;
         
@@ -13565,14 +13576,14 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             </div>
             <div class="company-contacts-list">
                 ${contacts.map(contact => `
-                    <div class="company-contact-card" onclick="openCompanyContactPanel(${contact.id}); closeCompanyPanel();">
-                        <div class="company-contact-card-name">${contact.first_name || ''} ${contact.last_name || ''}</div>
-                        <div class="company-contact-card-title">${contact.title || '—'}</div>
+                    <div class="company-contact-card" onclick="openCompanyContactPanel(${parseInt(contact.id)}); closeCompanyPanel();">
+                        <div class="company-contact-card-name">${escapeHtml(contact.first_name)} ${escapeHtml(contact.last_name)}</div>
+                        <div class="company-contact-card-title">${escapeHtml(contact.title) || '—'}</div>
                         <div class="company-contact-card-meta">
-                            ${contact.functional_role ? `<span class="company-badge sbs">${contact.functional_role}</span>` : ''}
-                            ${contact.capture_role ? `<span class="company-badge vehicle">${contact.capture_role}</span>` : ''}
+                            ${contact.functional_role ? `<span class="company-badge sbs">${escapeHtml(contact.functional_role)}</span>` : ''}
+                            ${contact.capture_role ? `<span class="company-badge vehicle">${escapeHtml(contact.capture_role)}</span>` : ''}
                         </div>
-                        ${contact.email ? `<div class="company-contact-card-email">${contact.email}</div>` : ''}
+                        ${contact.email ? `<div class="company-contact-card-email">${escapeHtml(contact.email)}</div>` : ''}
                     </div>
                 `).join('')}
             </div>
@@ -13606,10 +13617,10 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             oppContainer.innerHTML = opps.map(opp => `
                 <div class="linked-item opportunity">
                     <div class="linked-item-info">
-                        <div class="linked-item-title">${opp.opportunityTitle || 'Untitled'}</div>
+                        <div class="linked-item-title">${escapeHtml(opp.opportunityTitle || 'Untitled')}</div>
                         <div class="linked-item-meta">
-                            <span class="linked-item-status ${(opp.opportunityStatus || '').toLowerCase()}">${opp.opportunityStatus || 'N/A'}</span>
-                            ${opp.role ? `<span>Role: ${opp.role}</span>` : ''}
+                            <span class="linked-item-status ${(opp.opportunityStatus || '').toLowerCase()}">${escapeHtml(opp.opportunityStatus || 'N/A')}</span>
+                            ${opp.role ? `<span>Role: ${escapeHtml(opp.role)}</span>` : ''}
                         </div>
                     </div>
                     <div class="linked-item-actions">
@@ -13628,10 +13639,10 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             propContainer.innerHTML = props.map(prop => `
                 <div class="linked-item proposal">
                     <div class="linked-item-info">
-                        <div class="linked-item-title">${prop.proposalTitle || 'Untitled'}</div>
+                        <div class="linked-item-title">${escapeHtml(prop.proposalTitle || 'Untitled')}</div>
                         <div class="linked-item-meta">
-                            <span class="linked-item-status ${(prop.proposalStatus || '').toLowerCase().replace(' ', '-')}">${prop.proposalStatus || 'N/A'}</span>
-                            ${prop.role ? `<span>Role: ${prop.role}</span>` : ''}
+                            <span class="linked-item-status ${(prop.proposalStatus || '').toLowerCase().replace(' ', '-')}">${escapeHtml(prop.proposalStatus || 'N/A')}</span>
+                            ${prop.role ? `<span>Role: ${escapeHtml(prop.role)}</span>` : ''}
                         </div>
                     </div>
                     <div class="linked-item-actions">
@@ -13710,7 +13721,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             const response = await fetch(`${API_URL}?action=${action}`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify(data)
             });
             const result = await response.json();
@@ -13725,7 +13736,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                     renderCompanyContactLinkedItems();
                 }
             } else {
-                showToast('Error linking opportunity: ' + (result.error || 'Unknown error', 'error'));
+                showToast('Error linking opportunity: ' + (result.error || 'Unknown error'), 'error');
             }
         } catch (error) {
             console.error('Error:', error);
@@ -13752,7 +13763,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             const response = await fetch(`${API_URL}?action=${action}`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify(data)
             });
             const result = await response.json();
@@ -13767,7 +13778,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                     renderCompanyContactLinkedItems();
                 }
             } else {
-                showToast('Error linking proposal: ' + (result.error || 'Unknown error', 'error'));
+                showToast('Error linking proposal: ' + (result.error || 'Unknown error'), 'error');
             }
         } catch (error) {
             console.error('Error:', error);
@@ -13992,32 +14003,32 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         document.getElementById('addContactOppSearch').value = '';
         document.getElementById('addContactOppSearch').style.display = 'none';
         
-        const badge = `<span class="contact-type-badge ${contactType}">${contactType === 'commercial' ? 'Commercial' : 'Federal'}</span>`;
+        const badge = `<span class="contact-type-badge ${escapeHtml(contactType)}">${contactType === 'commercial' ? 'Commercial' : 'Federal'}</span>`;
         const selectedDisplay = document.getElementById('selectedContactOpp');
         selectedDisplay.innerHTML = `
             <div class="item-info">
-                <div class="item-name" style="display: flex; align-items: center; gap: 8px;">${title}${badge}</div>
-                <div class="item-detail">${subtitle}</div>
+                <div class="item-name" style="display: flex; align-items: center; gap: 8px;">${escapeHtml(title)}${badge}</div>
+                <div class="item-detail">${escapeHtml(subtitle)}</div>
             </div>
             <button type="button" class="remove-btn" onclick="clearContactForOpportunity()">×</button>
         `;
         selectedDisplay.style.display = 'flex';
-        
+
         document.getElementById('addContactOppDropdown').classList.remove('show');
     }
-    
+
     function selectContactForProposal(id, contactType, title, subtitle) {
         document.getElementById('addContactPropContactId').value = id;
         document.getElementById('addContactPropContactType').value = contactType;
         document.getElementById('addContactPropSearch').value = '';
         document.getElementById('addContactPropSearch').style.display = 'none';
-        
-        const badge = `<span class="contact-type-badge ${contactType}">${contactType === 'commercial' ? 'Commercial' : 'Federal'}</span>`;
+
+        const badge = `<span class="contact-type-badge ${escapeHtml(contactType)}">${contactType === 'commercial' ? 'Commercial' : 'Federal'}</span>`;
         const selectedDisplay = document.getElementById('selectedContactProp');
         selectedDisplay.innerHTML = `
             <div class="item-info">
-                <div class="item-name" style="display: flex; align-items: center; gap: 8px;">${title}${badge}</div>
-                <div class="item-detail">${subtitle}</div>
+                <div class="item-name" style="display: flex; align-items: center; gap: 8px;">${escapeHtml(title)}${badge}</div>
+                <div class="item-detail">${escapeHtml(subtitle)}</div>
             </div>
             <button type="button" class="remove-btn" onclick="clearContactForProposal()">×</button>
         `;
@@ -14068,7 +14079,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             const response = await fetch(`${API_URL}?action=${action}`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify(data)
             });
             const result = await response.json();
@@ -14086,7 +14097,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 
                 renderOpportunityLinkedContacts(oppId);
             } else {
-                showToast('Error adding contact: ' + (result.error || 'Unknown error', 'error'));
+                showToast('Error adding contact: ' + (result.error || 'Unknown error'), 'error');
             }
         } catch (error) {
             console.error('Error:', error);
@@ -14119,7 +14130,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             const response = await fetch(`${API_URL}?action=${action}`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify(data)
             });
             const result = await response.json();
@@ -14134,7 +14145,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 
                 renderProposalLinkedContacts(propId);
             } else {
-                showToast('Error adding contact: ' + (result.error || 'Unknown error', 'error'));
+                showToast('Error adding contact: ' + (result.error || 'Unknown error'), 'error');
             }
         } catch (error) {
             console.error('Error:', error);
@@ -14348,7 +14359,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             if (data.success) {
                 await loadCompanyContactNotes(currentCompanyContactId);
             } else {
-                showToast('Error deleting note: ' + (data.error || 'Unknown error', 'error'));
+                showToast('Error deleting note: ' + (data.error || 'Unknown error'), 'error');
             }
         } catch (error) {
             console.error('Error deleting note:', error);
@@ -14370,7 +14381,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             const response = await fetch(`${API_URL}?action=saveCompanyContactNote`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify(noteData)
             });
             const data = await response.json();
@@ -14379,7 +14390,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 closeModal('ccNoteModal');
                 await loadCompanyContactNotes(currentCompanyContactId);
             } else {
-                showToast('Error saving note: ' + (data.error || 'Unknown error', 'error'));
+                showToast('Error saving note: ' + (data.error || 'Unknown error'), 'error');
             }
         } catch (error) {
             console.error('Error saving note:', error);
@@ -14506,6 +14517,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             const response = await fetch('api.php?action=uploadOpportunityDocument', {
                 method: 'POST',
+                headers: csrfHeaders(),
                 body: formData
             });
             const data = await response.json();
@@ -14513,7 +14525,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             if (data.success) {
                 loadOpportunityDocuments(opportunityId);
             } else {
-                showToast('Error uploading document: ' + (data.error || 'Unknown error', 'error'));
+                showToast('Error uploading document: ' + (data.error || 'Unknown error'), 'error');
             }
         } catch (error) {
             console.error('Error uploading document:', error);
@@ -14544,6 +14556,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             const response = await fetch('api.php?action=uploadProposalDocument', {
                 method: 'POST',
+                headers: csrfHeaders(),
                 body: formData
             });
             const data = await response.json();
@@ -14551,7 +14564,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             if (data.success) {
                 loadProposalDocuments(proposalId);
             } else {
-                showToast('Error uploading document: ' + (data.error || 'Unknown error', 'error'));
+                showToast('Error uploading document: ' + (data.error || 'Unknown error'), 'error');
             }
         } catch (error) {
             console.error('Error uploading document:', error);
@@ -14568,7 +14581,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             const response = await fetch('api.php?action=deleteOpportunityDocument', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({ id: documentId })
             });
             const data = await response.json();
@@ -14577,7 +14590,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 const opportunityId = document.getElementById('opportunityId').value;
                 loadOpportunityDocuments(opportunityId);
             } else {
-                showToast('Error deleting document: ' + (data.error || 'Unknown error', 'error'));
+                showToast('Error deleting document: ' + (data.error || 'Unknown error'), 'error');
             }
         } catch (error) {
             console.error('Error deleting document:', error);
@@ -14592,7 +14605,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             const response = await fetch('api.php?action=deleteProposalDocument', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({ id: documentId })
             });
             const data = await response.json();
@@ -14601,7 +14614,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
                 const proposalId = document.getElementById('proposalId').value;
                 loadProposalDocuments(proposalId);
             } else {
-                showToast('Error deleting document: ' + (data.error || 'Unknown error', 'error'));
+                showToast('Error deleting document: ' + (data.error || 'Unknown error'), 'error');
             }
         } catch (error) {
             console.error('Error deleting document:', error);
@@ -14680,6 +14693,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             const response = await fetch('api.php?action=uploadOpportunityDocument', {
                 method: 'POST',
+                headers: csrfHeaders(),
                 body: formData
             });
             const data = await response.json();
@@ -14687,7 +14701,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             if (data.success) {
                 loadOppPanelDocuments(currentOpportunityId);
             } else {
-                showToast('Error uploading document: ' + (data.error || 'Unknown error', 'error'));
+                showToast('Error uploading document: ' + (data.error || 'Unknown error'), 'error');
             }
         } catch (error) {
             console.error('Error uploading document:', error);
@@ -14704,7 +14718,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             const response = await fetch('api.php?action=deleteOpportunityDocument', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({ id: documentId })
             });
             const data = await response.json();
@@ -14712,7 +14726,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             if (data.success) {
                 loadOppPanelDocuments(opportunityId);
             } else {
-                showToast('Error deleting document: ' + (data.error || 'Unknown error', 'error'));
+                showToast('Error deleting document: ' + (data.error || 'Unknown error'), 'error');
             }
         } catch (error) {
             console.error('Error deleting document:', error);
@@ -14791,6 +14805,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             const response = await fetch('api.php?action=uploadProposalDocument', {
                 method: 'POST',
+                headers: csrfHeaders(),
                 body: formData
             });
             const data = await response.json();
@@ -14798,7 +14813,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             if (data.success) {
                 loadPropPanelDocuments(currentProposalId);
             } else {
-                showToast('Error uploading document: ' + (data.error || 'Unknown error', 'error'));
+                showToast('Error uploading document: ' + (data.error || 'Unknown error'), 'error');
             }
         } catch (error) {
             console.error('Error uploading proposal document:', error);
@@ -14815,7 +14830,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         try {
             const response = await fetch('api.php?action=deleteProposalDocument', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({ id: documentId })
             });
             const data = await response.json();
@@ -14823,7 +14838,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             if (data.success) {
                 loadPropPanelDocuments(proposalId);
             } else {
-                showToast('Error deleting document: ' + (data.error || 'Unknown error', 'error'));
+                showToast('Error deleting document: ' + (data.error || 'Unknown error'), 'error');
             }
         } catch (error) {
             console.error('Error deleting proposal document:', error);

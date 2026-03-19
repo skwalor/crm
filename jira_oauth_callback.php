@@ -7,17 +7,10 @@
  * Place this file in: /volume1/web/crm/jira_oauth_callback.php
  */
 
-// Show errors for debugging (remove in production)
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
+ini_set('display_errors', 0);
+error_reporting(E_ERROR | E_PARSE);
 
-// Start session BEFORE any output
-session_start();
-
-// Debug: Log session info
-error_log('Jira OAuth Callback - Session ID: ' . session_id());
-error_log('Jira OAuth Callback - Session Data: ' . print_r($_SESSION, true));
-error_log('Jira OAuth Callback - GET params: ' . print_r($_GET, true));
+require_once __DIR__ . '/includes/session_config.php';
 
 require_once __DIR__ . '/db_connect.php';
 require_once __DIR__ . '/includes/jira_config.php';
