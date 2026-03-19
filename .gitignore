@@ -1,3 +1,14 @@
 uploads/
 migrate_workspace_phase.php
 .DS_Store
+
+# Environment & credentials
+.env
+.env.local
+.env.production
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo

@@ -1,22 +1,22 @@
 <?php
 /**
  * IntePros Federal Celios.AI CRM - Jira Integration Configuration
- * 
- * IMPORTANT: Replace the placeholder values with your actual Jira OAuth credentials
- * from the Atlassian Developer Console.
- * 
+ *
+ * Credentials are loaded from .env file via env_loader.php
  * This file should be placed in: /includes/jira_config.php
  */
+
+require_once __DIR__ . '/env_loader.php';
 
 // ============================================================================
 // JIRA OAUTH 2.0 CONFIGURATION
 // ============================================================================
 
-define('JIRA_CLIENT_ID', '***REMOVED***');
-define('JIRA_CLIENT_SECRET', '***REMOVED***');
+define('JIRA_CLIENT_ID', getenv('JIRA_CLIENT_ID') ?: '');
+define('JIRA_CLIENT_SECRET', getenv('JIRA_CLIENT_SECRET') ?: '');
 
 // Your CRM's public URL
-define('JIRA_REDIRECT_URI', 'https://crm.celioscrm.com/jira_oauth_callback.php');
+define('JIRA_REDIRECT_URI', getenv('JIRA_REDIRECT_URI') ?: 'https://crm.celioscrm.com/jira_oauth_callback.php');
 
 // Atlassian OAuth endpoints
 define('JIRA_AUTH_URL', 'https://auth.atlassian.com/authorize');
@@ -28,7 +28,7 @@ define('JIRA_RESOURCES_URL', 'https://api.atlassian.com/oauth/token/accessible-r
 // Using classic scopes only (can't mix with granular scopes)
 define('JIRA_SCOPES', implode(' ', [
     'read:jira-work',
-    'write:jira-work', 
+    'write:jira-work',
     'read:jira-user',
     'offline_access'
 ]));
@@ -37,17 +37,14 @@ define('JIRA_SCOPES', implode(' ', [
 // DEFAULT PROJECT CONFIGURATION
 // ============================================================================
 
-// Your primary Jira project (from https://inteprosfed.atlassian.net/jira/software/c/projects/EL/)
-define('JIRA_DEFAULT_PROJECT_KEY', 'EL');
-define('JIRA_INSTANCE_URL', 'https://inteprosfed.atlassian.net');
+define('JIRA_DEFAULT_PROJECT_KEY', getenv('JIRA_DEFAULT_PROJECT_KEY') ?: 'EL');
+define('JIRA_INSTANCE_URL', getenv('JIRA_INSTANCE_URL') ?: 'https://inteprosfed.atlassian.net');
 
 // ============================================================================
 // TOKEN ENCRYPTION
 // ============================================================================
 
-// Generate a secure key: Run this in PHP and save the result here:
-// echo bin2hex(random_bytes(32));
-define('JIRA_ENCRYPTION_KEY', '***REMOVED***');
+define('JIRA_ENCRYPTION_KEY', getenv('JIRA_ENCRYPTION_KEY') ?: '');
 
 // ============================================================================
 // CACHE SETTINGS
@@ -66,8 +63,8 @@ define('JIRA_TOKEN_REFRESH_BUFFER', 300); // 5 minutes before expiry
 // Set to true if you want to receive webhooks from Jira
 define('JIRA_WEBHOOKS_ENABLED', false);
 
-// Secret for validating webhook payloads (generate your own)
-define('JIRA_WEBHOOK_SECRET', 'GENERATE_A_RANDOM_SECRET_HERE');
+// Secret for validating webhook payloads
+define('JIRA_WEBHOOK_SECRET', getenv('JIRA_WEBHOOK_SECRET') ?: '');
 
 // ============================================================================
 // HELPER FUNCTIONS
