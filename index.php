@@ -24,8 +24,9 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         .header-logo { position: absolute; left: 50%; transform: translateX(-50%); font-weight: bold; font-size: 1.3em; color: #667eea; white-space: nowrap; }
         .header-user-info { text-align: right; flex: 1; display: flex; justify-content: flex-end; align-items: center; gap: 10px; }
         .nav-tabs { display: flex; flex-wrap: wrap; gap: 5px; background: rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 5px; margin-bottom: 30px; }
-        .nav-tab { flex: 1; min-width: 100px; background: transparent; border: none; padding: 12px 15px; border-radius: 8px; cursor: pointer; color: white; font-weight: 500; transition: all 0.3s ease; font-size: 1.05rem; line-height: 1.3; }
-        .nav-tab.active { background: rgba(255, 255, 255, 0.25); font-weight: 700; border-bottom: 3px solid white; }
+        .nav-tab { flex: 1; min-width: 100px; background: transparent; border: none; padding: 12px 15px; border-radius: 8px; cursor: pointer; color: white; font-weight: 500; transition: all 0.3s ease; font-size: 1.05rem; line-height: 1.3; position: relative; }
+        .nav-tab.active { background: rgba(255, 255, 255, 0.25); font-weight: 700; }
+        .nav-tab.active::after { content: ''; position: absolute; bottom: 0; left: 25%; right: 25%; height: 3px; background: white; border-radius: 2px; }
         .nav-tab:hover { background: rgba(255, 255, 255, 0.15); }
         .tab-content { display: none; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-radius: 15px; padding: 30px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1); }
         .tab-content.active { display: block; animation: fadeIn 0.5s ease-in-out; }
