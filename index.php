@@ -1548,6 +1548,7 @@ $csrf_token = generate_csrf_token();
                         <option value="proposal">View by Proposal</option>
                         <option value="contact">View by Contact</option>
                         <option value="opportunity">View by Opportunity</option>
+                        <option value="priority">View by Priority</option>
                     </select>
                     <select id="kanbanItemFilter" class="kanban-select" style="display: none;" onchange="renderKanbanBoard()">
                         <option value="all">All Items</option>
@@ -2690,7 +2691,10 @@ $csrf_token = generate_csrf_token();
         <div id="oppNotesSection" class="contact-panel-section" style="display: none;">
             <div class="notes-header">
                 <h4 style="margin: 0;">Interaction Notes</h4>
-                <button class="btn" onclick="openAddOppNoteModal()">+ Add Note</button>
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn" onclick="openAddOppNoteModal()">+ Add Note</button>
+                    <button class="btn" onclick="openTaskModalForOpportunity(currentOpportunityId, '')">+ Add Task</button>
+                </div>
             </div>
             <div class="notes-filters">
                 <div class="notes-filter-group">
@@ -4489,7 +4493,7 @@ $csrf_token = generate_csrf_token();
         }
         
         try {
-            const response = await fetch(`${API_URL}?action=delete&type=${type}&id=${id}`, { method: 'POST' });
+            const response = await fetch(`${API_URL}?action=delete&type=${type}&id=${id}`, { method: 'POST', headers: csrfHeaders() });
             if (!response.ok) throw new Error('Delete failed');
             await fetchAllData();
         } catch (error) {
@@ -5723,13 +5727,19 @@ $csrf_token = generate_csrf_token();
     function populateKanbanUserFilter() {
         const userFilter = document.getElementById('kanbanUserFilter');
         if (!userFilter) return;
-        
+
+        const savedValue = userFilter.value;
+
         let options = '<option value="all">👥 All Users</option>';
         users.forEach(u => {
             const displayName = u.display_name || u.username;
             options += `<option value="${u.id}">${escapeHtml(displayName)}</option>`;
         });
         userFilter.innerHTML = options;
+
+        if (savedValue && userFilter.querySelector(`option[value="${savedValue}"]`)) {
+            userFilter.value = savedValue;
+        }
     }
     
     // Update date range visibility and reset date
@@ -5840,10 +5850,10 @@ $csrf_token = generate_csrf_token();
             renderKanbanBoard();
             return;
         }
-        
+
         itemFilter.style.display = 'block';
         // Handle plural forms correctly
-        const pluralMap = { 'proposal': 'Proposals', 'contact': 'Contacts', 'opportunity': 'Opportunities' };
+        const pluralMap = { 'proposal': 'Proposals', 'contact': 'Contacts', 'opportunity': 'Opportunities', 'priority': 'Priorities' };
         const pluralName = pluralMap[viewType] || (viewType.charAt(0).toUpperCase() + viewType.slice(1) + 's');
         let options = `<option value="all">All ${pluralName}</option>`;
         
@@ -5874,6 +5884,11 @@ $csrf_token = generate_csrf_token();
             filteredOpportunities.forEach(o => {
                 options += `<option value="${o.id}">${escapeHtml(o.title)}</option>`;
             });
+        } else if (viewType === 'priority') {
+            options = `<option value="all">All Priorities</option>`;
+            options += `<option value="High">High</option>`;
+            options += `<option value="Medium">Medium</option>`;
+            options += `<option value="Low">Low</option>`;
         }
         
         itemFilter.innerHTML = options;
@@ -5891,11 +5906,15 @@ $csrf_token = generate_csrf_token();
         // Filter by date range first
         filtered = filtered.filter(t => isTaskInDateRange(t));
         
-        // Filter by view type (proposal, contact, opportunity)
-        if (viewType !== 'all') {
+        // Filter by view type (proposal, contact, opportunity, priority)
+        if (viewType === 'priority') {
+            if (itemId !== 'all') {
+                filtered = filtered.filter(t => (t.priority || 'Medium') === itemId);
+            }
+        } else if (viewType !== 'all') {
             const relatedType = viewType.charAt(0).toUpperCase() + viewType.slice(1);
             filtered = filtered.filter(t => t.relatedTo === relatedType || t.relatedTo === relatedType.toLowerCase());
-            
+
             if (itemId !== 'all') {
                 // Filter by specific item
                 filtered = filtered.filter(t => t.related_item_id == itemId);

@@ -40,22 +40,42 @@ class JiraAPI {
      */
     private function loadTokens() {
         $stmt = $this->conn->prepare("
-            SELECT access_token, refresh_token, token_expires_at, cloud_id 
-            FROM jira_user_tokens 
+            SELECT access_token, refresh_token, token_expires_at, cloud_id
+            FROM jira_user_tokens
             WHERE user_id = ?
         ");
+
+        if (!$stmt) {
+            // Table likely doesn't exist yet - not connected
+            return;
+        }
+
         $stmt->bind_param("i", $this->userId);
         $stmt->execute();
         $result = $stmt->get_result();
-        
+
         if ($row = $result->fetch_assoc()) {
             $this->accessToken = jira_decrypt_token($row['access_token']);
             $this->cloudId = $row['cloud_id'];
-            
+
             // Check if token needs refresh
             $expiresAt = strtotime($row['token_expires_at']);
             if ($expiresAt - time() < JIRA_TOKEN_REFRESH_BUFFER) {
-                $this->refreshAccessToken(jira_decrypt_token($row['refresh_token']));
+                try {
+                    $this->refreshAccessToken(jira_decrypt_token($row['refresh_token']));
+                } catch (\Throwable $e) {
+                    // Refresh token is invalid/expired — clear stale tokens
+                    // from memory and database so the user can re-authenticate
+                    $this->accessToken = null;
+                    $this->cloudId = null;
+                    $del = $this->conn->prepare("DELETE FROM jira_user_tokens WHERE user_id = ?");
+                    if ($del) {
+                        $del->bind_param("i", $this->userId);
+                        $del->execute();
+                        $del->close();
+                    }
+                    error_log('Jira token refresh failed, cleared stale tokens for user ' . $this->userId . ': ' . $e->getMessage());
+                }
             }
         }
         $stmt->close();

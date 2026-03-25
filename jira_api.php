@@ -31,7 +31,7 @@ $userRole = $_SESSION['role'] ?? 'user';
 // Initialize Jira API
 try {
     $jira = new JiraAPI($conn, $userId);
-} catch (Exception $e) {
+} catch (\Throwable $e) {
     echo json_encode(['success' => false, 'error' => 'Failed to initialize Jira API: ' . $e->getMessage()]);
     exit;
 }
